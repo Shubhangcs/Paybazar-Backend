@@ -9,10 +9,10 @@ import (
 )
 
 type Routes struct {
-	Query *queries.Query
+	Query         *queries.Query
 	PasswordUtils *pkg.PasswordUtils
-	JwtUtils *pkg.JwtUtils
-	JsonUtils *pkg.JsonUtils
+	JwtUtils      *pkg.JwtUtils
+	JsonUtils     *pkg.JsonUtils
 }
 
 func newRoutes(query *queries.Query) *Routes {
@@ -20,10 +20,10 @@ func newRoutes(query *queries.Query) *Routes {
 	var jwtUtils = &pkg.JwtUtils{}
 	var jsonUtils = &pkg.JsonUtils{}
 	return &Routes{
-		Query: query,
+		Query:         query,
 		PasswordUtils: passwordUtils,
-		JwtUtils: jwtUtils,
-		JsonUtils: jsonUtils,
+		JwtUtils:      jwtUtils,
+		JsonUtils:     jsonUtils,
 	}
 }
 
@@ -36,5 +36,8 @@ func (r *Routes) AuthRouter(router *echo.Echo) {
 	)
 	var handler = handlers.NewAuthHandler(repo)
 
-	router.POST("/register" , handler.RegisterAdminRequest)
+	router.POST("/admin/register", handler.RegisterAdminRequest)
+	router.POST("/md/register", handler.RegisterMasterDistributorRequest)
+	router.POST("/distributor/register", handler.RegisterDistributorRequest)
+	router.POST("/user/register", handler.RegisterUserRequest)
 }

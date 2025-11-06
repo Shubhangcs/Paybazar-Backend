@@ -139,7 +139,7 @@ func (qr *Query) InitializeDatabase() {
 		`CREATE TABLE IF NOT EXISTS admin_wallet_transactions(
 		  transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		  admin_id UUID NOT NULL,
-		  amount TEXT NOT NULL CHECK (amount > 0),
+		  amount TEXT NOT NULL,
 		  transaction_type TEXT NOT NULL CHECK (transaction_type IN ('CREDIT','DEBIT')),
 		  transaction_service TEXT,
 		  reference_id UUID,
@@ -164,7 +164,7 @@ func (qr *Query) InitializeDatabase() {
 		`CREATE TABLE IF NOT EXISTS master_distributor_wallet_transactions(
 		  transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		  master_distributor_id UUID NOT NULL,
-		  amount TEXT NOT NULL CHECK (amount > 0),
+		  amount TEXT NOT NULL,
 		  transaction_type TEXT NOT NULL CHECK (transaction_type IN ('CREDIT','DEBIT')),
 		  transaction_service TEXT,
 		  reference_id UUID,
@@ -189,7 +189,7 @@ func (qr *Query) InitializeDatabase() {
 		`CREATE TABLE IF NOT EXISTS distributor_wallet_transactions(
 		  transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		  distributor_id UUID NOT NULL,
-		  amount TEXT NOT NULL CHECK (amount > 0),
+		  amount TEXT NOT NULL,
 		  transaction_type TEXT NOT NULL CHECK (transaction_type IN ('CREDIT','DEBIT')),
 		  transaction_service TEXT,
 		  reference_id UUID,
@@ -214,7 +214,7 @@ func (qr *Query) InitializeDatabase() {
 		`CREATE TABLE IF NOT EXISTS user_wallet_transactions(
 		  transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		  user_id UUID NOT NULL,
-		  amount TEXT NOT NULL CHECK (amount > 0),
+		  amount TEXT NOT NULL,
 		  transaction_type TEXT NOT NULL CHECK (transaction_type IN ('CREDIT','DEBIT')),
 		  transaction_service TEXT,
 		  reference_id UUID,
@@ -234,7 +234,7 @@ func (qr *Query) InitializeDatabase() {
 		  ifsc_code TEXT NOT NULL,
 		  bank_name TEXT NOT NULL,
 		  beneficiary_name TEXT NOT NULL,
-		  amount TEXT NOT NULL CHECK (amount > 0),
+		  amount TEXT NOT NULL,
 		  transfer_type TEXT NOT NULL CHECK (transfer_type IN ('IMPS','NEFT')),
 		  transaction_status TEXT NOT NULL CHECK (transaction_status IN ('PENDING','SUCCESS','FAILED')),
 		  remarks TEXT,
@@ -252,7 +252,7 @@ func (qr *Query) InitializeDatabase() {
 		  request_unique_id TEXT UNIQUE NOT NULL DEFAULT ('FR' || LPAD(nextval('fund_request_seq')::TEXT, 7, '0')),
 		  requester_id UUID NOT NULL,
 		  requester_type TEXT NOT NULL CHECK (requester_type IN ('USER','DISTRIBUTOR','MASTER_DISTRIBUTOR')),
-		  amount TEXT NOT NULL CHECK (amount > 0),
+		  amount TEXT NOT NULL,
 		  bank_name TEXT,
 		  account_number TEXT,
 		  ifsc_code TEXT,

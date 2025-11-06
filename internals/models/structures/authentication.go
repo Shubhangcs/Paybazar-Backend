@@ -78,7 +78,7 @@ type DistributorLoginRequest struct {
 type DistributorRegisterRequest struct {
 	AdminID             string `json:"admin_id" validate:"required,uuid4"`
 	MasterDistributorID string `json:"master_distributor_id" validate:"required,uuid4"`
-	DistributorName     string `json:"distributor_name" validate:"required,min=2,max-50"`
+	DistributorName     string `json:"distributor_name" validate:"required,min=2,max=50"`
 	DistributorEmail    string `json:"distributor_email" validate:"required,email"`
 	DistributorPassword string `json:"distributor_password" validate:"required,passwordStrong"`
 	DistributorPhone    string `json:"distributor_phone" validate:"required,phoneIN"`
@@ -87,7 +87,7 @@ type DistributorRegisterRequest struct {
 type DistributorAuthResponse struct {
 	DistributorID       string `json:"distributor_id" validate:"required,uuid4"`
 	DistributorUniqueID string `json:"distributor_unique_id" validate:"required"`
-	DistributorName     string `json:"distributor_name" validate:"required,min=2,max-50"`
+	DistributorName     string `json:"distributor_name" validate:"required,min=2,max=50"`
 	MasterDistributorID string `json:"master_distributor_id" validate:"required,uuid4"`
 	AdminID             string `json:"admin_id" validate:"required,uuid4"`
 }
