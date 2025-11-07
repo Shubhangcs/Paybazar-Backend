@@ -24,18 +24,31 @@ type UserWallet struct {
 	Balance  string `json:"balance"`
 }
 
-type AdminAddAmountRequest struct {
-	AdminID            string `json:"admin_id"`
-	Amount             string `json:"amount"`
-	TransactionType    string `json:"transaction_type"`
-	TransactionService string `json:"transaction_service"`
-	RefrenceID         string `json:"reference_id"`
-	Remarks            string `json:"remarks"`
+// Admin Wallet Models
+
+type AdminWalletTopupRequest struct {
+	AdminId string `json:"admin_id"`
+	Amount  string `json:"amount"`
+	Remarks string `json:"remarks"`
 }
 
-type AdminAddAmountToUserWalletRequest struct {
-	AdminID string `json:"admin_id"`
-	UserID  string `json:"user_id"`
-	Admount string `json:"amount"`
-	AdminTransactionType string `json:""`
+type AdminWalletTopupResponse struct {
+	AdminId       string `json:"admin_id"`
+	TransactionId string `json:"transaction_id"`
+	Balance       string `json:"balance"`
+}
+
+// Master Distributor Wallet Models
+
+type MasterDistributorWalletTopupRequest struct {
+	AdminId             string `json:"admin_id"`
+	MasterDistributorId string `json:"master_distributor_id"`
+	Amount              string `json:"amount"`
+	Remarks             string `json:"remarks"`
+}
+
+type MasterDistributorWalletTopupResponse struct {
+	MasterDistributorId string `json:"master_distributor_id"`
+	TransactionId       string `json:"transaction_id"`
+	Balance             string `json:"balance"`
 }

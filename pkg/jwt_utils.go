@@ -16,7 +16,7 @@ func (JwtUtils) GenerateToken(data interface{}, expiry time.Duration) (string, e
 	// Creating a jwt
 	var claims = jwt.MapClaims{
 		"data": data,
-		"exp":       time.Now().Add(expiry).Unix(),
+		"exp":  time.Now().Add(expiry).Unix(),
 	}
 	tokenSign := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
