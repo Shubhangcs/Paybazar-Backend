@@ -3,8 +3,8 @@ package structures
 // User Authentication Models
 
 type UserLoginRequest struct {
-	Phone string `json:"phone" validate:"required,phoneIN"`
-	OTP   string `json:"otp" validate:"required"`
+	Phone string `json:"user_phone" validate:"required,phoneIN"`
+	OTP   string `json:"otp" validate:"omitempty"`
 }
 
 type UserRegistrationRequest struct {
@@ -58,7 +58,7 @@ type MasterDistributorRegisterRequest struct {
 	MasterDistributorName        string `json:"master_distributor_name" validate:"required,min=2,max=50"`
 	MasterDistributorEmail       string `json:"master_distributor_email" validate:"required,email"`
 	MasterDistributorPassword    string `json:"master_distributor_password" validate:"required,passwordStrong"`
-	MasterDistributorPhoneNumber string `json:"master_distributor_phone_number" validate:"required,phoneIN"`
+	MasterDistributorPhoneNumber string `json:"master_distributor_phone" validate:"required,phoneIN"`
 }
 
 type MasterDistributorAuthResponse struct {
@@ -97,5 +97,5 @@ type DistributorAuthResponse struct {
 type AuthResponse struct {
 	Message string `json:"message"`
 	Status  string `json:"status"`
-	Data    any    `json:"data"`
+	Data    any    `json:"data,omitempty"`
 }

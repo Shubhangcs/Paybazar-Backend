@@ -15,14 +15,16 @@ type authRepository struct {
 	jwtUtils      *pkg.JwtUtils
 	passwordUtils *pkg.PasswordUtils
 	jsonUtils     *pkg.JsonUtils
+	twillioUtils  *pkg.TwillioUtils
 }
 
-func NewAuthRepository(query *queries.Query, jwtUtils *pkg.JwtUtils, passwordUtils *pkg.PasswordUtils, jsonUtils *pkg.JsonUtils) *authRepository {
+func NewAuthRepository(query *queries.Query, jwtUtils *pkg.JwtUtils, passwordUtils *pkg.PasswordUtils, jsonUtils *pkg.JsonUtils, twillioUtils *pkg.TwillioUtils) *authRepository {
 	return &authRepository{
 		query:         query,
 		jwtUtils:      jwtUtils,
 		passwordUtils: passwordUtils,
 		jsonUtils:     jsonUtils,
+		twillioUtils:  twillioUtils,
 	}
 }
 
@@ -201,5 +203,45 @@ func (ar *authRepository) LoginDistributor(e echo.Context) (string, error) {
 }
 
 func (ar *authRepository) LoginUserSendOTP(e echo.Context) (string, error) {
+	var req structures.UserLoginRequest
+	if err := e.Bind(&req); err != nil {
+		return "", fmt.Errorf("invalid request format: %w", err)
+	}
+	if err := e.Validate(req); err != nil {
+		return "", fmt.Errorf("invalid request data: %w", err)
+	}
+	exists, err := ar.query.CheckUserExistViaPhone(req.Phone)
+	if err != nil {
+		return "", fmt.Errorf("failed to find user in database: %w", err)
+	}
+	if !exists {
+		return "", fmt.Errorf("invalid phone number")
+	}
+	otp, err := ar.query.GenerateOTPForUser(req.Phone)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate otp in database: %w", err)
+	}
+	if err := ar.twillioUtils.SendOTP(req.Phone, otp); err != nil {
+		return "", fmt.Errorf("failed to send otp from twillio: %w", err)
+	}
+	return "OTP sent successfully", err
+}
 
+func (ar *authRepository) LoginUserValidateOTP(e echo.Context) (string, error) {
+	var req structures.UserLoginRequest
+	if err := e.Bind(&req); err != nil {
+		return "", fmt.Errorf("invalid request body: %w", err)
+	}
+	if err := e.Validate(req); err != nil {
+		return "", fmt.Errorf("invalid request data: %w", err)
+	}
+	res, err := ar.query.ValidateOTP(&req)
+	if err != nil {
+		return "", fmt.Errorf("failed to validate OTP: %w", err)
+	}
+	if err := e.Validate(res); err != nil {
+		return "", fmt.Errorf("failed to validate response: %w", err)
+	}
+	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24*365)
+	return token, err
 }

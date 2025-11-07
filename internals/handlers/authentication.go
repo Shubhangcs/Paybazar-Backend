@@ -49,3 +49,43 @@ func (ah *authHandler) RegisterUserRequest(e echo.Context) error {
 	}
 	return e.JSON(http.StatusOK, structures.AuthResponse{Message: "user registration successfull", Status: "success", Data: map[string]string{"token": token}})
 }
+
+func (ah *authHandler) LoginAdminRequest(e echo.Context) error {
+	token, err := ah.authRepo.LoginAdmin(e)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, structures.AuthResponse{Message: err.Error(), Status: "failed"})
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{Message: "admin login successfull", Status: "success", Data: map[string]string{"token": token}})
+}
+
+func (ah *authHandler) LoginMasterDistributorRequest(e echo.Context) error {
+	token, err := ah.authRepo.LoginMasterDistributor(e)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, structures.AuthResponse{Message: err.Error(), Status: "failed"})
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{Message: "master distributor login successfull", Status: "success", Data: map[string]string{"token": token}})
+}
+
+func (ah *authHandler) LoginDistributorRequest(e echo.Context) error {
+	token, err := ah.authRepo.LoginDistributor(e)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, structures.AuthResponse{Message: err.Error(), Status: "failed"})
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{Message: "distributor login successfull", Status: "success", Data: map[string]string{"token": token}})
+}
+
+func (ah *authHandler) LoginUserSendOTPRequest(e echo.Context) error {
+	message, err := ah.authRepo.LoginUserSendOTP(e)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, structures.AuthResponse{Message: err.Error(), Status: "failed"})
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{Message: message, Status: "success"})
+}
+
+func (ah *authHandler) LoginUserValidateOTPRequest(e echo.Context) error {
+	token, err := ah.authRepo.LoginUserValidateOTP(e)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, structures.AuthResponse{Message: err.Error(), Status: "failed"})
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{Message: "user login successfull", Status: "success", Data: map[string]string{"token": token}})
+}

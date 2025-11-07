@@ -355,3 +355,10 @@ func (q *Query) LoginDistributor(req *structures.DistributorLoginRequest) (*stru
 
 	return &res, err
 }
+
+func (q *Query) CheckUserExistViaPhone(phone string) (bool, error) {
+	var isUserExist bool
+	query := "SELECT EXISTS(SELECT 1 FROM users WHERE user_phone=$1) as user_exists"
+	err := q.Pool.QueryRow(context.Background(), query, phone).Scan(&isUserExist)
+	return isUserExist, err
+}
