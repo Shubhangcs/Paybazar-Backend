@@ -2,46 +2,121 @@ package queries
 
 import (
 	"context"
+	"time"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/structures"
 )
 
-func (q *Query) GetFundRequestsByID(requesterId string) (*[]structures.FundRequest, error) {
-	var fundRequest structures.FundRequest
+func (q *Query) GetFundRequestsById(requesterId string) (*[]structures.FundRequest, error) {
 	var fundRequests []structures.FundRequest
 
 	query := `
-		SELECT admin_id, requester_id, requester_type, amount, bank_name, account_number, ifsc_code, bank_branch, utr_number, remarks, request_status FROM fund_requests WHERE requester_id=$1
+	SELECT 
+		admin_id,
+		request_id,
+		requester_id,
+		requester_type,
+		amount,
+		bank_name,
+		account_number,
+		ifsc_code,
+		bank_branch,
+		utr_number,
+		remarks,
+		request_status
+	FROM fund_requests
+	WHERE requester_id = $1;
 	`
-	res, err := q.Pool.Query(context.Background(), query, requesterId)
+
+	rows, err := q.Pool.Query(context.Background(), query, requesterId)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Close()
+	defer rows.Close()
 
-	for res.Next() {
-		if err := res.Scan(
-			&fundRequest.AdminId,
-			&fundRequest.RequesterId,
-			&fundRequest.RequesterType,
-			&fundRequest.Amount,
-			&fundRequest.BankName,
-			&fundRequest.IFSCCode,
-			&fundRequest.BankBranch,
-			&fundRequest.UTRNumber,
-			&fundRequest.Remarks,
-			&fundRequest.RequestStatus,
+	for rows.Next() {
+		var fr structures.FundRequest
+		if err := rows.Scan(
+			&fr.AdminId,
+			&fr.RequestId,
+			&fr.RequesterId,
+			&fr.RequesterType,
+			&fr.Amount,
+			&fr.BankName,
+			&fr.AccountNumber,
+			&fr.IFSCCode,
+			&fr.BankBranch,
+			&fr.UTRNumber,
+			&fr.Remarks,
+			&fr.RequestStatus,
 		); err != nil {
 			return nil, err
 		}
-		fundRequests = append(fundRequests, fundRequest)
+		fundRequests = append(fundRequests, fr)
 	}
 
-	if res.Err() != nil {
-		return nil, res.Err()
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
+
 	return &fundRequests, nil
 }
+
+func (q *Query) GetAllFundRequests(adminId string) (*[]structures.FundRequest, error) {
+	var fundRequests []structures.FundRequest
+
+	query := `
+	SELECT 
+		admin_id,
+		request_id,
+		requester_id,
+		requester_type,
+		amount,
+		bank_name,
+		account_number,
+		ifsc_code,
+		bank_branch,
+		utr_number,
+		remarks,
+		request_status
+	FROM fund_requests
+	WHERE admin_id=$1;
+	`
+
+	rows, err := q.Pool.Query(context.Background(), query,adminId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var fr structures.FundRequest
+		if err := rows.Scan(
+			&fr.AdminId,
+			&fr.RequestId,
+			&fr.RequesterId,
+			&fr.RequesterType,
+			&fr.Amount,
+			&fr.BankName,
+			&fr.AccountNumber,
+			&fr.IFSCCode,
+			&fr.BankBranch,
+			&fr.UTRNumber,
+			&fr.Remarks,
+			&fr.RequestStatus,
+		); err != nil {
+			return nil, err
+		}
+		fundRequests = append(fundRequests, fr)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	return &fundRequests, nil
+}
+
 
 func (q *Query) RejectFundRequest(requestId string) error {
 
@@ -64,6 +139,7 @@ func (q *Query) RejectFundRequest(requestId string) error {
 func (q *Query) CreateFundRequest(req *structures.FundRequest) error {
 	query := `
 	INSERT INTO fund_requests (
+		admin_id,
 		requester_id,
 		requester_type,
 		amount,
@@ -76,6 +152,7 @@ func (q *Query) CreateFundRequest(req *structures.FundRequest) error {
 		remarks
 	)
 	VALUES (
+		$10,
 		$1,        -- requester_id (UUID)
 		$2,        -- requester_type ('USER' | 'DISTRIBUTOR' | 'MASTER_DISTRIBUTOR')
 		$3,        -- amount
@@ -101,112 +178,105 @@ func (q *Query) CreateFundRequest(req *structures.FundRequest) error {
 		req.BankBranch,
 		req.UTRNumber,
 		req.Remarks,
+		req.AdminId,
 	)
 
 	return err
 }
 
 func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequest) error {
-	query := `
-	WITH
-	-- Admin and target selectors gated by RequesterType
-	sel_admin AS (
+	const sql = `
+	WITH sel_admin AS (
 		SELECT a.admin_id, a.admin_unique_id
 		FROM admins a
 		WHERE a.admin_id = $1
 	),
+	sel_req AS (
+		SELECT fr.request_id, fr.requester_id, fr.requester_type, fr.amount, fr.remarks
+		FROM fund_requests fr
+		WHERE fr.request_id = $2
+		  AND fr.request_status = 'PENDING'
+		FOR UPDATE
+	),
 	sel_user AS (
 		SELECT u.user_id, u.user_unique_id
 		FROM users u
-		WHERE u.user_id = $2 AND $3 = 'USER'
+		JOIN sel_req r ON r.requester_type = 'USER' AND u.user_id = r.requester_id
 	),
 	sel_distributor AS (
 		SELECT d.distributor_id, d.distributor_unique_id
 		FROM distributors d
-		WHERE d.distributor_id = $2 AND $3 = 'DISTRIBUTOR'
+		JOIN sel_req r ON r.requester_type = 'DISTRIBUTOR' AND d.distributor_id = r.requester_id
 	),
 	sel_md AS (
 		SELECT m.master_distributor_id, m.master_distributor_unique_id
 		FROM master_distributors m
-		WHERE m.master_distributor_id = $2 AND $3 = 'MASTER_DISTRIBUTOR'
+		JOIN sel_req r ON r.requester_type = 'MASTER_DISTRIBUTOR' AND m.master_distributor_id = r.requester_id
 	),
-
-	-- Deduct from admin only if sufficient balance
 	deduct_admin AS (
 		UPDATE admin_wallets aw
-		SET balance = aw.balance - $4::numeric
-		FROM sel_admin sa
+		SET balance = aw.balance - r.amount
+		FROM sel_admin sa, sel_req r
 		WHERE aw.admin_id = sa.admin_id
-		  AND aw.balance >= $4::numeric
+		  AND aw.balance >= r.amount
 		RETURNING aw.admin_id
 	),
-
-	-- Admin DEBIT transaction (reference_id = requester's unique_id)
 	admin_tx AS (
 		INSERT INTO admin_wallet_transactions (
-			admin_id,
-			amount,
-			transaction_type,
-			transaction_service,
-			reference_id,
-			remarks
+			admin_id, amount, transaction_type, transaction_service, reference_id, remarks
 		)
 		SELECT
 			sa.admin_id,
-			$4::numeric,
+			r.amount,
 			'DEBIT',
-			CASE 
-				WHEN $3 = 'USER' THEN 'USER'
-				WHEN $3 = 'DISTRIBUTOR' THEN 'DISTRIBUTOR'
-				WHEN $3 = 'MASTER_DISTRIBUTOR' THEN 'MD'
+			CASE r.requester_type
+				WHEN 'USER' THEN 'USER'
+				WHEN 'DISTRIBUTOR' THEN 'DISTRIBUTOR'
+				WHEN 'MASTER_DISTRIBUTOR' THEN 'MD'
 			END,
 			COALESCE(
 				(SELECT su.user_unique_id FROM sel_user su),
 				(SELECT sd.distributor_unique_id FROM sel_distributor sd),
 				(SELECT sm.master_distributor_unique_id FROM sel_md sm)
 			),
-			$5
-		FROM deduct_admin da
-		JOIN sel_admin sa ON TRUE
+			r.remarks
+		FROM sel_admin sa, sel_req r
+		JOIN deduct_admin d ON TRUE
 		RETURNING 1
 	),
-
-	-- Credit target wallet (only one branch matches)
 	credit_user AS (
 		UPDATE user_wallets uw
-		SET balance = uw.balance + $4::numeric
-		FROM sel_user su
+		SET balance = uw.balance + r.amount
+		FROM sel_user su, sel_req r
 		WHERE uw.user_id = su.user_id
 		RETURNING uw.user_id
 	),
 	credit_distributor AS (
 		UPDATE distributor_wallets dw
-		SET balance = dw.balance + $4::numeric
-		FROM sel_distributor sd
+		SET balance = dw.balance + r.amount
+		FROM sel_distributor sd, sel_req r
 		WHERE dw.distributor_id = sd.distributor_id
 		RETURNING dw.distributor_id
 	),
 	credit_md AS (
 		UPDATE master_distributor_wallets mw
-		SET balance = mw.balance + $4::numeric
-		FROM sel_md sm
+		SET balance = mw.balance + r.amount
+		FROM sel_md sm, sel_req r
 		WHERE mw.master_distributor_id = sm.master_distributor_id
 		RETURNING mw.master_distributor_id
 	),
-
-	-- Target CREDIT transaction (reference_id = admin unique_id)
 	user_tx AS (
 		INSERT INTO user_wallet_transactions (
 			user_id, amount, transaction_type, transaction_service, reference_id, remarks
 		)
 		SELECT
 			cu.user_id,
-			$4::numeric,
+			r.amount,
 			'CREDIT',
 			'ADMIN',
-			(SELECT sa.admin_unique_id FROM sel_admin sa),
-			$5
-		FROM credit_user cu
+			sa.admin_unique_id,
+			r.remarks
+		FROM credit_user cu, sel_admin sa, sel_req r
 		RETURNING 1
 	),
 	distributor_tx AS (
@@ -215,12 +285,12 @@ func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequest) error {
 		)
 		SELECT
 			cd.distributor_id,
-			$4::numeric,
+			r.amount,
 			'CREDIT',
 			'ADMIN',
-			(SELECT sa.admin_unique_id FROM sel_admin sa),
-			$5
-		FROM credit_distributor cd
+			sa.admin_unique_id,
+			r.remarks
+		FROM credit_distributor cd, sel_admin sa, sel_req r
 		RETURNING 1
 	),
 	md_tx AS (
@@ -229,46 +299,34 @@ func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequest) error {
 		)
 		SELECT
 			cm.master_distributor_id,
-			$4::numeric,
+			r.amount,
 			'CREDIT',
 			'ADMIN',
-			(SELECT sa.admin_unique_id FROM sel_admin sa),
-			$5
-		FROM credit_md cm
+			sa.admin_unique_id,
+			r.remarks
+		FROM credit_md cm, sel_admin sa, sel_req r
 		RETURNING 1
 	),
-
-	-- Accept the most recent matching PENDING fund request
-	-- This runs ONLY if admin deduction succeeded (joined via deduct_admin)
 	upd_fund_req AS (
 		UPDATE fund_requests fr
-		SET request_status = 'ACCEPTED',
+		SET request_status = 'APPROVED',
 			updated_at = NOW()
-		WHERE fr.request_id = (
-			SELECT fr2.request_id
-			FROM fund_requests fr2
-			WHERE fr2.requester_id = $2
-			  AND fr2.requester_type = $3
-			  AND fr2.amount = $4::numeric
-			  AND fr2.request_status = 'PENDING'
-			ORDER BY fr2.created_at DESC
-			LIMIT 1
-		)
-		AND EXISTS (SELECT 1 FROM deduct_admin)  -- ensure debit happened
+		FROM sel_req r
+		WHERE fr.request_id = r.request_id
+		  AND EXISTS (SELECT 1 FROM deduct_admin)
 		RETURNING 1
 	)
-
 	SELECT 1;
 	`
 
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
 	_, err := q.Pool.Exec(
-		context.Background(),
-		query,
-		req.AdminId,       // $1
-		req.RequesterId,   // $2
-		req.RequesterType, // $3: 'USER' | 'DISTRIBUTOR' | 'MASTER_DISTRIBUTOR'
-		req.Amount,        // $4 (cast to numeric in SQL)
-		req.Remarks,       // $5
+		ctx,
+		sql,
+		req.AdminId,   // $1
+		req.RequestId, // $2
 	)
 	return err
 }

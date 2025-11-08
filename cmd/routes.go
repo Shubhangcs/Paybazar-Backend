@@ -30,23 +30,125 @@ func newRoutes(query *queries.Query) *Routes {
 	}
 }
 
-func (r *Routes) AuthRouter(router *echo.Echo) {
-	var repo = repositories.NewAuthRepository(
+func (r *Routes) AdminRoutes(rg *echo.Group) {
+	// Authentication
+	var authRepo = repositories.NewAuthRepository(
 		r.Query,
 		r.JwtUtils,
 		r.PasswordUtils,
 		r.JsonUtils,
 		r.TwillioUtils,
 	)
-	var handler = handlers.NewAuthHandler(repo)
+	var authHandler = handlers.NewAuthHandler(authRepo)
+	rg.POST("/register", authHandler.RegisterAdminRequest)
+	rg.POST("/login", authHandler.LoginAdminRequest)
+	rg.POST("/create/md", authHandler.RegisterMasterDistributorRequest)
+	rg.POST("/create/distributor", authHandler.RegisterDistributorRequest)
+	rg.POST("/create/user", authHandler.RegisterUserRequest)
 
-	router.POST("/admin/register", handler.RegisterAdminRequest)
-	router.POST("/md/register", handler.RegisterMasterDistributorRequest)
-	router.POST("/distributor/register", handler.RegisterDistributorRequest)
-	router.POST("/user/register", handler.RegisterUserRequest)
-	router.POST("/admin/login", handler.LoginAdminRequest)
-	router.POST("/md/login", handler.LoginMasterDistributorRequest)
-	router.POST("/distributor/login", handler.LoginDistributorRequest)
-	router.POST("/user/sendotp", handler.LoginUserSendOTPRequest)
-	router.POST("/user/validateotp", handler.LoginUserValidateOTPRequest)
+	// Fund Request
+	var fundRequestRepo = repositories.NewFundRequestRepository(
+		r.Query,
+	)
+	var fundRequestHandler = handlers.NewFundRequestHandler(fundRequestRepo)
+	rg.GET("/get/fund/requests/:admin_id", fundRequestHandler.GetAllFundRequests)
+	rg.GET("/reject/fund/request/:request_id", fundRequestHandler.RejectFundRequest)
+	rg.POST("/accept/fund/request", fundRequestHandler.AcceptFundRequest)
+
+	// Wallet Request
+	var walletRepo = repositories.NewWalletRepository(
+		r.Query,
+	)
+	var walletHandler = handlers.NewWalletHandler(walletRepo)
+	rg.GET("/wallet/get/balance/:admin_id", walletHandler.GetAdminWalletBalanceRequest)
+	rg.GET("/wallet/get/transactions/:admin_id", walletHandler.GetAdminWalletTransactionsRequest)
+	rg.POST("/wallet/topup", walletHandler.AdminWalletTopupRequest)
+}
+
+func (r *Routes) MasterDistributorRoutes(rg *echo.Group) {
+	// Authentication
+	var authRepo = repositories.NewAuthRepository(
+		r.Query,
+		r.JwtUtils,
+		r.PasswordUtils,
+		r.JsonUtils,
+		r.TwillioUtils,
+	)
+	var authHandler = handlers.NewAuthHandler(authRepo)
+	rg.POST("/login", authHandler.LoginMasterDistributorRequest)
+
+	// Fund Request
+	var fundRequestRepo = repositories.NewFundRequestRepository(
+		r.Query,
+	)
+	var fundRequestHandler = handlers.NewFundRequestHandler(fundRequestRepo)
+	rg.POST("/create/fund/request", fundRequestHandler.CreateFundRequest)
+	rg.GET("/get/fund/request/:requester_id", fundRequestHandler.GetFundRequestsById)
+
+	// Wallet Request
+	var walletRepo = repositories.NewWalletRepository(
+		r.Query,
+	)
+	var walletHandler = handlers.NewWalletHandler(walletRepo)
+	rg.GET("/wallet/get/balance/:master_distributor_id", walletHandler.GetMasterDistributorWalletBalanceRequest)
+	rg.GET("/wallet/get/transactions/:master_distributor_id", walletHandler.GetMasterDistributorWalletTransactionsRequest)
+}
+
+func (r *Routes) DistributorRoutes(rg *echo.Group) {
+	// Authentication
+	var authRepo = repositories.NewAuthRepository(
+		r.Query,
+		r.JwtUtils,
+		r.PasswordUtils,
+		r.JsonUtils,
+		r.TwillioUtils,
+	)
+	var authHandler = handlers.NewAuthHandler(authRepo)
+	rg.POST("/login", authHandler.LoginDistributorRequest)
+
+	// Fund Request
+	var fundRequestRepo = repositories.NewFundRequestRepository(
+		r.Query,
+	)
+	var fundRequestHandler = handlers.NewFundRequestHandler(fundRequestRepo)
+	rg.POST("/create/fund/request", fundRequestHandler.CreateFundRequest)
+	rg.GET("/get/fund/request/:requester_id", fundRequestHandler.GetFundRequestsById)
+
+	// Wallet Request
+	var walletRepo = repositories.NewWalletRepository(
+		r.Query,
+	)
+	var walletHandler = handlers.NewWalletHandler(walletRepo)
+	rg.GET("/wallet/get/balance/:distributor_id", walletHandler.GetDistributorWalletBalanceRequest)
+	rg.GET("/wallet/get/transactions/:distributor_id", walletHandler.GetDistributorWalletTransactionsRequest)
+}
+
+func (r *Routes) UserRoutes(rg *echo.Group) {
+	// Authentication
+	var authRepo = repositories.NewAuthRepository(
+		r.Query,
+		r.JwtUtils,
+		r.PasswordUtils,
+		r.JsonUtils,
+		r.TwillioUtils,
+	)
+	var authHandler = handlers.NewAuthHandler(authRepo)
+	rg.POST("/login/send/otp", authHandler.LoginUserSendOTPRequest)
+	rg.POST("/login/validate/otp", authHandler.LoginUserValidateOTPRequest)
+
+	// Fund Request
+	var fundRequestRepo = repositories.NewFundRequestRepository(
+		r.Query,
+	)
+	var fundRequestHandler = handlers.NewFundRequestHandler(fundRequestRepo)
+	rg.POST("/create/fund/request", fundRequestHandler.CreateFundRequest)
+	rg.GET("/get/fund/request/:requester_id", fundRequestHandler.GetFundRequestsById)
+
+	// Wallet Request
+	var walletRepo = repositories.NewWalletRepository(
+		r.Query,
+	)
+	var walletHandler = handlers.NewWalletHandler(walletRepo)
+	rg.GET("/wallet/get/balance/:user_id", walletHandler.GetUserWalletBalanceRequest)
+	rg.GET("/wallet/get/transactions/:user_id", walletHandler.GetUserWalletTransactionsRequest)
 }

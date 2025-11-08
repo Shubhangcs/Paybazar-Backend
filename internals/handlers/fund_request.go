@@ -34,6 +34,14 @@ func (fh *fundRequestHandler) RejectFundRequest(e echo.Context) error {
 	return e.JSON(http.StatusOK, structures.FundRequestResponse{Message: res, Status: "success"})
 }
 
+func (fh *fundRequestHandler) GetFundRequestsById(e echo.Context) error {
+	res, err := fh.fundRequestRepo.GetFundRequestsById(e)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, structures.AuthResponse{Message: err.Error(), Status: "failed"})
+	}
+	return e.JSON(http.StatusOK, structures.FundRequestResponse{Message: "all fund requests fetched successfully", Status: "success", Data: res})
+}
+
 func (fh *fundRequestHandler) GetAllFundRequests(e echo.Context) error {
 	res, err := fh.fundRequestRepo.GetAllFundRequests(e)
 	if err != nil {

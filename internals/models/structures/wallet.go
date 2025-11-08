@@ -32,54 +32,52 @@ type AdminWalletTopupRequest struct {
 	Remarks string `json:"remarks"`
 }
 
-type AdminWalletTopupResponse struct {
-	AdminId       string `json:"admin_id"`
-	TransactionId string `json:"transaction_id"`
-	Balance       string `json:"balance"`
-}
-
-// Master Distributor Wallet Models
-
-type MasterDistributorWalletTopupRequest struct {
-	AdminId             string `json:"admin_id"`
+type MasterDistributorWalletTransactions struct {
+	TransactionId       string `json:"transaction_id"`
 	MasterDistributorId string `json:"master_distributor_id"`
 	Amount              string `json:"amount"`
+	TransactionType     string `json:"transaction_type"`
+	TransactionService  string `json:"transaction_service"`
+	ReferenceId         string `json:"reference_id"`
 	Remarks             string `json:"remarks"`
-	RequestId           string `json:"request_id"`
+	CreatedAt           string `json:"created_at"`
 }
 
-type MasterDistributorWalletTopupResponse struct {
-	MasterDistributorId string `json:"master_distributor_id"`
-	TransactionId       string `json:"transaction_id"`
-	Balance             string `json:"balance"`
+type AdminWalletTransactions struct {
+	TransactionId      string `json:"transaction_id"`
+	AdminId            string `json:"admin_id"`
+	Amount             string `json:"amount"`
+	TransactionType    string `json:"transaction_type"`
+	TransactionService string `json:"transaction_service"`
+	ReferenceId        string `json:"reference_id"`
+	Remarks            string `json:"remarks"`
+	CreatedAt          string `json:"created_at"`
 }
 
-// Distributor Wallet Models
-
-type DistributorWalletTopupRequest struct {
-	AdminId       string `json:"admin_id"`
-	DistributorId string `json:"distributor_id"`
-	Amount        string `json:"amount"`
-	Remarks       string `json:"remarks"`
+type DistributorWalletTransactions struct {
+	TransactionId      string `json:"transaction_id"`
+	DistributorId      string `json:"distributor_id"`
+	Amount             string `json:"amount"`
+	TransactionType    string `json:"transaction_type"`
+	TransactionService string `json:"transaction_service"`
+	ReferenceId        string `json:"reference_id"`
+	Remarks            string `json:"remarks"`
+	CreatedAt          string `json:"created_at"`
 }
 
-type DistributorWalletTopupResponse struct {
-	DistributorId string `json:"distributor_id"`
-	TransactionId string `json:"transaction_id"`
-	Balance       string `json:"balance"`
+type UserWalletTransactions struct {
+	TransactionId      string `json:"transaction_id"`
+	UserId             string `json:"user_id"`
+	Amount             string `json:"amount"`
+	TransactionType    string `json:"transaction_type"`
+	TransactionService string `json:"transaction_service"`
+	ReferenceId        string `json:"reference_id"`
+	Remarks            string `json:"remarks"`
+	CreatedAt          string `json:"created_at"`
 }
 
-// User Wallet Models
-
-type UserWalletTopupRequest struct {
-	AdminId string `json:"admin_id"`
-	UserId  string `json:"user_id"`
-	Amount  string `json:"amount"`
-	Remarks string `json:"remarks"`
-}
-
-type UserWalletTopupResponse struct {
-	UserId        string `json:"user_id"`
-	TransactionId string `json:"transaction_id"`
-	Balance       string `json:"balance"`
+type WalletResponse struct {
+	Message string `json:"message"`
+	Status  string `json:"status"`
+	Data    any    `json:"data,omitempty"`
 }

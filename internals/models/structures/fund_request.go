@@ -2,6 +2,7 @@ package structures
 
 type FundRequest struct {
 	AdminId       string `json:"admin_id" validate:"required,uuid4"`
+	RequestId     string `json:"request_id"`
 	RequesterId   string `json:"requester_id" validate:"required,uuid4"`
 	RequesterType string `json:"requester_type" validate:"required"`
 	Amount        string `json:"amount" validate:"required"`
@@ -15,11 +16,8 @@ type FundRequest struct {
 }
 
 type AcceptFundRequest struct {
-	AdminId       string `json:"admin_id" validate:"required,uuid4"`
-	RequesterId   string `json:"requester_id" validate:"required,uuid4"`
-	RequesterType string `json:"requester_type" validate:"required"`
-	Amount        string `json:"amount" validate:"required"`
-	Remarks       string `json:"remarks" validate:"required"`
+	AdminId   string `json:"admin_id" validate:"required,uuid4"`
+	RequestId string `json:"request_id" validate:"required,uuid4"`
 }
 
 type FundRequestResponse struct {

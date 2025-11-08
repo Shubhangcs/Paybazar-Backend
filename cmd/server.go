@@ -35,7 +35,14 @@ func start() {
 
 	// routes
 	var routes *Routes = newRoutes(query)
-	routes.AuthRouter(router)
+	adminRouterGroup := router.Group("/admin")
+	userRouterGroup := router.Group("/user")
+	distributorRouterGroup := router.Group("/distributor")
+	masterDistributorRouterGroup := router.Group("/md")
+	routes.AdminRoutes(adminRouterGroup)
+	routes.MasterDistributorRoutes(masterDistributorRouterGroup)
+	routes.DistributorRoutes(distributorRouterGroup)
+	routes.UserRoutes(userRouterGroup)
 
 	// Starting the Server
 	var serverPort string = os.Getenv("SERVER_PORT")

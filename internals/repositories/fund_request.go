@@ -34,13 +34,7 @@ func (fr *fundRequestRepo) CreateFundRequest(e echo.Context) (string, error) {
 }
 
 func (fr *fundRequestRepo) RejectFundRequest(e echo.Context) (string, error) {
-	var req string
-	if err := e.Bind(&req); err != nil {
-		return "", fmt.Errorf("invalid request format: %w", err)
-	}
-	if err := e.Validate(req); err != nil {
-		return "", fmt.Errorf("invalid request body: %w", err)
-	}
+	var req string = e.Param("request_id")
 	err := fr.query.RejectFundRequest(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to reject fund request: %w", err)
@@ -63,29 +57,20 @@ func (fr *fundRequestRepo) AcceptFundRequest(e echo.Context) (string, error) {
 	return "fund request accepted successfully", nil
 }
 
-func (fr *fundRequestRepo) GetAllFundRequests(e echo.Context) (*[]structures.FundRequest, error) {
-	var req string
-	if err := e.Bind(&req); err != nil {
-		return nil, fmt.Errorf("invalid request format: %w", err)
-	}
-	res, err := fr.query.GetFundRequestsByID(req)
+func (fr *fundRequestRepo) GetFundRequestsById(e echo.Context) (*[]structures.FundRequest, error) {
+	var req string = e.Param("requester_id")
+	res, err := fr.query.GetFundRequestsById(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all fund request: %w", err)
 	}
 	return res, err
 }
 
-func (fr *fundRequestRepo) AdminWalletTopup(e echo.Context) (string, error) {
-	var req structures.AdminWalletTopupRequest
-	if err := e.Bind(&req); err != nil {
-		return "", fmt.Errorf("invalid request format: %w", err)
-	}
-	if err := e.Validate(req); err != nil {
-		return "", fmt.Errorf("invalid request body: %w", err)
-	}
-	err := fr.query.AdminWalletTopup(&req)
+func (fr *fundRequestRepo) GetAllFundRequests(e echo.Context) (*[]structures.FundRequest, error) {
+	var req = e.Param("admin_id")
+	res, err := fr.query.GetAllFundRequests(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to topup admin wallet: %w", err)
+		return nil, fmt.Errorf("failed to get all fund request: %w", err)
 	}
-	return "admin wallet topup successfull", err
+	return res, err
 }
