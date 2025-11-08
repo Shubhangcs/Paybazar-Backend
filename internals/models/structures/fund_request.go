@@ -1,20 +1,29 @@
 package structures
 
 type FundRequest struct {
-	AdminId       string `json:"admin_id"`
-	RequesterId   string `json:"requester_id"`
-	RequesterType string `json:"requester_type"`
-	Amount        string `json:"amount"`
-	BankName      string `json:"bank_name"`
-	AccountNumber string `json:"account_number"`
-	IFSCCode      string `json:"ifsc_code"`
-	BankBranch    string `json:"bank_branch"`
-	UTRNumber     string `json:"utr_number"`
-	Remarks       string `json:"remarks"`
+	AdminId       string `json:"admin_id" validate:"required,uuid4"`
+	RequesterId   string `json:"requester_id" validate:"required,uuid4"`
+	RequesterType string `json:"requester_type" validate:"required"`
+	Amount        string `json:"amount" validate:"required"`
+	BankName      string `json:"bank_name" validate:"required"`
+	AccountNumber string `json:"account_number" validate:"required"`
+	IFSCCode      string `json:"ifsc_code" validate:"required"`
+	BankBranch    string `json:"bank_branch" validate:"required"`
+	UTRNumber     string `json:"utr_number" validate:"required"`
+	Remarks       string `json:"remarks" validate:"required"`
 	RequestStatus string `json:"request_status"`
 }
 
+type AcceptFundRequest struct {
+	AdminId       string `json:"admin_id" validate:"required,uuid4"`
+	RequesterId   string `json:"requester_id" validate:"required,uuid4"`
+	RequesterType string `json:"requester_type" validate:"required"`
+	Amount        string `json:"amount" validate:"required"`
+	Remarks       string `json:"remarks" validate:"required"`
+}
+
 type FundRequestResponse struct {
-	RequestId     string `json:"request_id"`
-	RequestStatus string `json:"request_status"`
+	Message string `json:"message"`
+	Status  string `json:"status"`
+	Data    any    `json:"data,omitempty"`
 }

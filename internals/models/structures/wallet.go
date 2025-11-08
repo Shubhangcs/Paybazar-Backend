@@ -45,6 +45,7 @@ type MasterDistributorWalletTopupRequest struct {
 	MasterDistributorId string `json:"master_distributor_id"`
 	Amount              string `json:"amount"`
 	Remarks             string `json:"remarks"`
+	RequestId           string `json:"request_id"`
 }
 
 type MasterDistributorWalletTopupResponse struct {
