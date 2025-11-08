@@ -52,3 +52,33 @@ type MasterDistributorWalletTopupResponse struct {
 	TransactionId       string `json:"transaction_id"`
 	Balance             string `json:"balance"`
 }
+
+// Distributor Wallet Models
+
+type DistributorWalletTopupRequest struct {
+	AdminId       string `json:"admin_id"`
+	DistributorId string `json:"distributor_id"`
+	Amount        string `json:"amount"`
+	Remarks       string `json:"remarks"`
+}
+
+type DistributorWalletTopupResponse struct {
+	DistributorId string `json:"distributor_id"`
+	TransactionId string `json:"transaction_id"`
+	Balance       string `json:"balance"`
+}
+
+// User Wallet Models
+
+type UserWalletTopupRequest struct {
+	AdminId string `json:"admin_id"`
+	UserId  string `json:"user_id"`
+	Amount  string `json:"amount"`
+	Remarks string `json:"remarks"`
+}
+
+type UserWalletTopupResponse struct {
+	UserId        string `json:"user_id"`
+	TransactionId string `json:"transaction_id"`
+	Balance       string `json:"balance"`
+}

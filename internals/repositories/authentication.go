@@ -132,7 +132,7 @@ func (ar *authRepository) LoginAdmin(e echo.Context) (string, error) {
 	if err := e.Validate(req); err != nil {
 		return "", fmt.Errorf("invalid request data: %w", err)
 	}
-	dbPass, err := ar.query.GetAdminPassword(req.AdminPassword)
+	dbPass, err := ar.query.GetAdminPassword(req.AdminEmail)
 	if err != nil {
 		return "", fmt.Errorf("failed to retrive password from database: %w", err)
 	}
@@ -158,7 +158,7 @@ func (ar *authRepository) LoginMasterDistributor(e echo.Context) (string, error)
 	if err := e.Validate(req); err != nil {
 		return "", fmt.Errorf("invalid request data: %w", err)
 	}
-	dbPass, err := ar.query.GetMasterDistributorPassword(req.MasterDistributorPassword)
+	dbPass, err := ar.query.GetMasterDistributorPassword(req.MasterDistributorEmail)
 	if err != nil {
 		return "", fmt.Errorf("failed to retrive password from database: %w", err)
 	}
@@ -184,7 +184,7 @@ func (ar *authRepository) LoginDistributor(e echo.Context) (string, error) {
 	if err := e.Validate(req); err != nil {
 		return "", fmt.Errorf("invalid request data: %w", err)
 	}
-	dbPass, err := ar.query.GetDistributorPassword(req.DistributorPassword)
+	dbPass, err := ar.query.GetDistributorPassword(req.DistributorEmail)
 	if err != nil {
 		return "", fmt.Errorf("failed to retrive password from database: %w", err)
 	}
