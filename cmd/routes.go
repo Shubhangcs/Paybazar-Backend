@@ -12,20 +12,17 @@ type Routes struct {
 	Query         *queries.Query
 	PasswordUtils *pkg.PasswordUtils
 	JwtUtils      *pkg.JwtUtils
-	JsonUtils     *pkg.JsonUtils
 	TwillioUtils  *pkg.TwillioUtils
 }
 
 func newRoutes(query *queries.Query) *Routes {
 	var passwordUtils = &pkg.PasswordUtils{}
 	var jwtUtils = &pkg.JwtUtils{}
-	var jsonUtils = &pkg.JsonUtils{}
 	var twillioUtils = &pkg.TwillioUtils{}
 	return &Routes{
 		Query:         query,
 		PasswordUtils: passwordUtils,
 		JwtUtils:      jwtUtils,
-		JsonUtils:     jsonUtils,
 		TwillioUtils:  twillioUtils,
 	}
 }
@@ -36,7 +33,6 @@ func (r *Routes) AdminRoutes(rg *echo.Group) {
 		r.Query,
 		r.JwtUtils,
 		r.PasswordUtils,
-		r.JsonUtils,
 		r.TwillioUtils,
 	)
 	var authHandler = handlers.NewAuthHandler(authRepo)
@@ -71,7 +67,6 @@ func (r *Routes) MasterDistributorRoutes(rg *echo.Group) {
 		r.Query,
 		r.JwtUtils,
 		r.PasswordUtils,
-		r.JsonUtils,
 		r.TwillioUtils,
 	)
 	var authHandler = handlers.NewAuthHandler(authRepo)
@@ -100,7 +95,6 @@ func (r *Routes) DistributorRoutes(rg *echo.Group) {
 		r.Query,
 		r.JwtUtils,
 		r.PasswordUtils,
-		r.JsonUtils,
 		r.TwillioUtils,
 	)
 	var authHandler = handlers.NewAuthHandler(authRepo)
@@ -129,7 +123,6 @@ func (r *Routes) UserRoutes(rg *echo.Group) {
 		r.Query,
 		r.JwtUtils,
 		r.PasswordUtils,
-		r.JsonUtils,
 		r.TwillioUtils,
 	)
 	var authHandler = handlers.NewAuthHandler(authRepo)

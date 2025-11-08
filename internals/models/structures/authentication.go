@@ -4,7 +4,7 @@ package structures
 
 type UserLoginRequest struct {
 	Phone string `json:"user_phone" validate:"required,phoneIN"`
-	OTP   string `json:"otp" validate:"omitempty"`
+	OTP   string `json:"user_otp"`
 }
 
 type UserRegistrationRequest struct {

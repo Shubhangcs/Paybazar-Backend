@@ -14,16 +14,14 @@ type authRepository struct {
 	query         *queries.Query
 	jwtUtils      *pkg.JwtUtils
 	passwordUtils *pkg.PasswordUtils
-	jsonUtils     *pkg.JsonUtils
 	twillioUtils  *pkg.TwillioUtils
 }
 
-func NewAuthRepository(query *queries.Query, jwtUtils *pkg.JwtUtils, passwordUtils *pkg.PasswordUtils, jsonUtils *pkg.JsonUtils, twillioUtils *pkg.TwillioUtils) *authRepository {
+func NewAuthRepository(query *queries.Query, jwtUtils *pkg.JwtUtils, passwordUtils *pkg.PasswordUtils, twillioUtils *pkg.TwillioUtils) *authRepository {
 	return &authRepository{
 		query:         query,
 		jwtUtils:      jwtUtils,
 		passwordUtils: passwordUtils,
-		jsonUtils:     jsonUtils,
 		twillioUtils:  twillioUtils,
 	}
 }
@@ -48,8 +46,11 @@ func (ar *authRepository) RegisterAdmin(e echo.Context) (string, error) {
 	if err := e.Validate(res); err != nil {
 		return "", fmt.Errorf("invalid response from database: %w", err)
 	}
-	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24*365)
-	return token, err
+	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate jwt token: %w", err)
+	}
+	return token, nil
 }
 
 func (ar *authRepository) RegisterMasterDistributor(e echo.Context) (string, error) {
@@ -72,8 +73,11 @@ func (ar *authRepository) RegisterMasterDistributor(e echo.Context) (string, err
 	if err := e.Validate(res); err != nil {
 		return "", fmt.Errorf("invalid response from database: %w", err)
 	}
-	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24*365)
-	return token, err
+	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate jwt token: %w", err)
+	}
+	return token, nil
 }
 
 func (ar *authRepository) RegisterDistributor(e echo.Context) (string, error) {
@@ -97,7 +101,10 @@ func (ar *authRepository) RegisterDistributor(e echo.Context) (string, error) {
 		return "", fmt.Errorf("invalid response from database: %w", err)
 	}
 	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24*365)
-	return token, err
+	if err != nil {
+		return "", fmt.Errorf("failed to generate jwt token: %w", err)
+	}
+	return token, nil
 }
 
 func (ar *authRepository) RegisterUser(e echo.Context) (string, error) {
@@ -121,7 +128,10 @@ func (ar *authRepository) RegisterUser(e echo.Context) (string, error) {
 		return "", fmt.Errorf("invalid response from database: %w", err)
 	}
 	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24*365)
-	return token, err
+	if err != nil {
+		return "", fmt.Errorf("failed to generate jwt token: %w", err)
+	}
+	return token, nil
 }
 
 func (ar *authRepository) LoginAdmin(e echo.Context) (string, error) {
@@ -147,7 +157,10 @@ func (ar *authRepository) LoginAdmin(e echo.Context) (string, error) {
 		return "", fmt.Errorf("invalid response from database: %w", err)
 	}
 	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24*365)
-	return token, err
+	if err != nil {
+		return "", fmt.Errorf("failed to generate jwt token: %w", err)
+	}
+	return token, nil
 }
 
 func (ar *authRepository) LoginMasterDistributor(e echo.Context) (string, error) {
@@ -173,7 +186,10 @@ func (ar *authRepository) LoginMasterDistributor(e echo.Context) (string, error)
 		return "", fmt.Errorf("invalid response from database: %w", err)
 	}
 	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24*365)
-	return token, err
+	if err != nil {
+		return "", fmt.Errorf("failed to generate jwt token: %w", err)
+	}
+	return token, nil
 }
 
 func (ar *authRepository) LoginDistributor(e echo.Context) (string, error) {
@@ -199,7 +215,10 @@ func (ar *authRepository) LoginDistributor(e echo.Context) (string, error) {
 		return "", fmt.Errorf("invalid response from database: %w", err)
 	}
 	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24*365)
-	return token, err
+	if err != nil {
+		return "", fmt.Errorf("failed to generate jwt token: %w", err)
+	}
+	return token, nil
 }
 
 func (ar *authRepository) LoginUserSendOTP(e echo.Context) (string, error) {
@@ -215,7 +234,7 @@ func (ar *authRepository) LoginUserSendOTP(e echo.Context) (string, error) {
 		return "", fmt.Errorf("failed to find user in database: %w", err)
 	}
 	if !exists {
-		return "", fmt.Errorf("invalid phone number")
+		return "", fmt.Errorf("failed to find user in database: user not exist")
 	}
 	otp, err := ar.query.GenerateOTPForUser(req.Phone)
 	if err != nil {
@@ -240,8 +259,11 @@ func (ar *authRepository) LoginUserValidateOTP(e echo.Context) (string, error) {
 		return "", fmt.Errorf("failed to validate OTP: %w", err)
 	}
 	if err := e.Validate(res); err != nil {
-		return "", fmt.Errorf("failed to validate response: %w", err)
+		return "", fmt.Errorf("invalid response from database: %w", err)
 	}
 	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24*365)
-	return token, err
+	if err != nil {
+		return "", fmt.Errorf("failed to generate jwt token: %w", err)
+	}
+	return token, nil
 }
