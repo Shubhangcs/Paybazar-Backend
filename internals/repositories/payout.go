@@ -34,11 +34,11 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 		return "", fmt.Errorf("invalid request body: %w", err)
 	}
 
-	// create your transaction id, etc.
-	transactionID, err := pr.query.PayoutRequestInitilizationRequest(&req)
-	if err != nil {
-		return "", fmt.Errorf("failed to initilize payout request: %w", err)
-	}
+	// // create your transaction id, etc.
+	// transactionID, err := pr.query.PayoutRequestInitilizationRequest(&req)
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to initilize payout request: %w", err)
+	// }
 
 	// ---- RKIT payoutTransfer call ----
 	url := "https://v2bapi.rchargekit.biz/rkitpayout/payoutTransfer"
@@ -59,7 +59,7 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 		"beneficiary_name":   req.BeneficiaryName, // string
 		"amount":             req.Amount,          // float or string; RKIT doc says float
 		"transfer_type":      req.TransferType,    // "5" for IMPS, "6" for NEFT
-		"partner_request_id": transactionID,       // use your generated id
+		"partner_request_id": "dgwsgdhw",       // use your generated id
 	}
 
 	body, err := json.Marshal(payload)

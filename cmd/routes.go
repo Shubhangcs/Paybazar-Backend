@@ -150,5 +150,5 @@ func (r *Routes) UserRoutes(rg *echo.Group) {
 		r.Query,
 	)
 	var payoutHandler = handlers.NewPayoutHandler(payoutRepo)
-	rg.POST("/user/payout", payoutHandler.PayoutRequest)
+	rg.POST("/payout", payoutHandler.PayoutRequest)
 }
