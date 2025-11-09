@@ -47,7 +47,7 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to check payout limit: %w", err)
 	}
-	if hasExceded {
+	if !hasExceded {
 		return "", fmt.Errorf("payout limit exceded")
 	}
 
