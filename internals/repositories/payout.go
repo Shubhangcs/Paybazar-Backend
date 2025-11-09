@@ -119,7 +119,7 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 		if err := pr.query.PayoutFailure(apiReqBody.PartnerRequestID); err != nil {
 			return "", fmt.Errorf("failed to update api failure: %w", err)
 		}
-		return "", fmt.Errorf("failed to complete api request: %v", apiFailureResponse.Message)
+		return "", fmt.Errorf("failed to complete api request: %v", string(respBytes))
 	}
 
 	var apiSuccessResponse structures.PayoutApiSuccessResponse

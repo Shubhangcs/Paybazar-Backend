@@ -20,10 +20,10 @@ type PayoutRequest struct {
 type PayoutInitilizationRequest struct {
 	UserID          string `json:"user_id"`
 	MobileNumber    string `json:"mobile_number"`
-	AccountNumber   string `json:"acount_number"`
+	AccountNumber   string `json:"account_number"`
 	IFSCCode        string `json:"ifsc_code"`
 	BankName        string `json:"bank_name"`
-	BeneficiaryName string `json:"benificary_name"`
+	BeneficiaryName string `json:"beneficiary_name"`
 	Amount          string `json:"amount"`
 	TransferType    string `json:"transfer_type"`
 	Remarks         string `json:"remarks"`
