@@ -249,6 +249,7 @@ func (qr *Query) InitializeDatabase() {
 			bank_name TEXT NOT NULL,
 			beneficiary_name TEXT NOT NULL,
 			amount NUMERIC(20,2) NOT NULL DEFAULT 0,
+			commision NUMERIC(20,2) NOT NULL DEFAULT 0,
 			transfer_type TEXT NOT NULL CHECK (transfer_type IN ('IMPS','NEFT')),
 			transaction_status TEXT NOT NULL CHECK (transaction_status IN ('PENDING','SUCCESS','FAILED')),
 			remarks TEXT,

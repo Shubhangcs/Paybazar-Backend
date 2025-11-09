@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,79 +30,105 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 		return "", fmt.Errorf("invalid request format: %w", err)
 	}
 	if err := e.Validate(req); err != nil {
-		return "", fmt.Errorf("invalid request body: %w", err)
+		return "", fmt.Errorf("invalid request data: %w", err)
 	}
 
-	// // create your transaction id, etc.
-	// transactionID, err := pr.query.PayoutRequestInitilizationRequest(&req)
-	// if err != nil {
-	// 	return "", fmt.Errorf("failed to initilize payout request: %w", err)
-	// }
+	// Check User Balance
+	hasBalance, err := pr.query.CheckUserBalance(req.UserID, req.Amount)
+	if err != nil {
+		return "", fmt.Errorf("failed to check user wallet balance: %w", err)
+	}
+	if !hasBalance {
+		return "", fmt.Errorf("insufficient balance")
+	}
 
-	// ---- RKIT payoutTransfer call ----
-	url := "https://v2bapi.rchargekit.biz/rkitpayout/payoutTransfer"
+	// Check Payout Limit
+	hasExceded, err := pr.query.CheckPayoutLimit(req.UserID, req.Amount)
+	if err != nil {
+		return "", fmt.Errorf("failed to check payout limit: %w", err)
+	}
+	if hasExceded {
+		return "", fmt.Errorf("payout limit exceded")
+	}
 
-	// Token from env (or inject via config)
+	// Initilize Payout Request
+	apiReqBody, err := pr.query.InitilizePayoutRequest(&structures.PayoutInitilizationRequest{
+		UserID:          req.UserID,
+		MobileNumber:    req.MobileNumber,
+		AccountNumber:   req.AccountNumber,
+		IFSCCode:        req.IFSCCode,
+		BankName:        req.BankName,
+		BeneficiaryName: req.BeneficiaryName,
+		Amount:          req.Amount,
+		TransferType:    req.TransferType,
+		Remarks:         req.Remarks,
+		Commission:      req.Commission,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to initilize payout request: %w", err)
+	}
+
+	// Api Request
+	if err := e.Validate(req); err != nil {
+		return "", fmt.Errorf("failed to validate api request format: %w", err)
+	}
 	token := os.Getenv("RKIT_API_TOKEN")
 	if token == "" {
 		return "", fmt.Errorf("missing RKIT_API_TOKEN")
 	}
-
-	// Build request payload as RKIT expects
-	// Map your incoming req fields to RKIT's names
-	payload := map[string]interface{}{
-		"mobile_no":          req.MobileNumber,    // string, 10-digit
-		"account_no":         req.AccountNumber,   // string
-		"ifsc":               req.IFSCCode,        // string
-		"bank_name":          req.BankName,        // string (<= 20 chars)
-		"beneficiary_name":   req.BeneficiaryName, // string
-		"amount":             req.Amount,          // float or string; RKIT doc says float
-		"transfer_type":      req.TransferType,    // "5" for IMPS, "6" for NEFT
-		"partner_request_id": "dgwsgdhw",       // use your generated id
-	}
-
-	body, err := json.Marshal(payload)
+	var url string = "https://v2bapi.rchargekit.biz/rkitpayout/payoutTransfer"
+	reqBody, err := json.Marshal(apiReqBody)
 	if err != nil {
-		return "", fmt.Errorf("encode payout payload: %w", err)
+		return "", fmt.Errorf("failed to encode api request json: %w", err)
 	}
 
-	// Context with timeout (good practice for external calls)
-	ctx, cancel := context.WithTimeout(e.Request().Context(), 15*time.Second)
-	defer cancel()
-
-	payoutReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	apiRequest, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
 	if err != nil {
-		return "", fmt.Errorf("create payout request: %w", err)
+		return "", fmt.Errorf("failed to create payout request: %w", err)
 	}
-	payoutReq.Header.Set("Content-Type", "application/json")
-	payoutReq.Header.Set("Authorization", "Bearer "+token)
+	apiRequest.Header.Set("Content-Type", "application/json")
+	apiRequest.Header.Set("Authorization", "Bearer "+token)
 
 	client := &http.Client{
 		Timeout: 20 * time.Second, // extra guard; ctx still rules
 	}
-
-	resp, err := client.Do(payoutReq)
+	resp, err := client.Do(apiRequest)
 	if err != nil {
-		return "", fmt.Errorf("send payout request: %w", err)
+		return "", fmt.Errorf("failed to send api request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("read payout response: %w", err)
+		return "", fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// You can optionally parse it to act on status (1=success IMPS, 2=pending NEFT)
-	// per RKIT docs. :contentReference[oaicite:1]{index=1}
-	// type rkitResp struct {
-	// 	Error        int    `json:"error"`
-	// 	Msg          string `json:"msg"`
-	// 	Status       int    `json:"status"`     // 1=success (IMPS), 2=pending (NEFT)
-	// 	OrderID      string `json:"orderid"`
-	// 	OpTransID    string `json:"optransid"`
-	// 	PartnerReqID string `json:"partnerreqid"`
-	// }
+	var base struct {
+		Error int `json:"error"`
+	}
 
-	// Return raw response JSON (your signature requires string)
-	return string(respBytes), nil
+	if err := json.Unmarshal(respBytes, &base); err != nil {
+		return "", fmt.Errorf("failed to unmarshal base response: %w", err)
+	}
+
+	if base.Error != 0 {
+		var apiFailureResponse structures.PayoutApiFailureResponse
+		if err := json.Unmarshal(respBytes, &apiFailureResponse); err != nil {
+			return "", fmt.Errorf("failed to unmarshal failure response: %w", err)
+		}
+		if err := pr.query.PayoutFailure(apiReqBody.PartnerRequestID); err != nil {
+			return "", fmt.Errorf("failed to update api failure: %w", err)
+		}
+		return "", fmt.Errorf("failed to complete api request: %v", apiFailureResponse.Message)
+	}
+
+	var apiSuccessResponse structures.PayoutApiSuccessResponse
+	if err := json.Unmarshal(respBytes, &apiSuccessResponse); err != nil {
+		return "", fmt.Errorf("failed to unmarshal success response: %w", err)
+	}
+
+	if err := pr.query.PayoutSuccess(&apiSuccessResponse); err != nil {
+		return "", fmt.Errorf("failed to update api success response: %w", err)
+	}
+	return "transaction successfull", nil
 }
