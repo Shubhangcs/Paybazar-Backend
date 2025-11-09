@@ -325,8 +325,8 @@ func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequest) error {
 	_, err := q.Pool.Exec(
 		ctx,
 		sql,
-		req.AdminId,   // $1
-		req.RequestId, // $2
+		req.AdminId,
+		req.RequestId,
 	)
 	return err
 }

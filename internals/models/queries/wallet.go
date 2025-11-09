@@ -30,7 +30,6 @@ func (q *Query) AdminWalletTopup(req *structures.AdminWalletTopupRequest) error 
 			amount,
 			transaction_type,
 			transaction_service,
-			reference_id,
 			remarks
 		)
 		SELECT
@@ -38,7 +37,6 @@ func (q *Query) AdminWalletTopup(req *structures.AdminWalletTopupRequest) error 
 			$2,
 			'CREDIT',
 			'SELF',
-			NULL,
 			$3
 		FROM upd
 	)
@@ -66,7 +64,7 @@ func (q *Query) GetAdminWalletTransactions(adminId string) (*[]structures.AdminW
 		transaction_service,
 		reference_id,
 		remarks,
-		created_at
+		created_at::TEXT
 	FROM admin_wallet_transactions
 	WHERE admin_id = $1
 	ORDER BY created_at DESC;
@@ -236,7 +234,7 @@ func (q *Query) GetDistributorWalletTransactions(distributorId string) (*[]struc
 
 func (q *Query) GetUserWalletBalance(userId string) (string, error) {
 	var balance string
-	query := `SELECT balance FROM users WHERE user_id=$1`
+	query := `SELECT balance FROM user_wallets WHERE user_id=$1`
 	err := q.Pool.QueryRow(context.Background(), query, userId).Scan(&balance)
 	return balance, err
 }

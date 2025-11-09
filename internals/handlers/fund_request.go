@@ -39,7 +39,7 @@ func (fh *fundRequestHandler) GetFundRequestsById(e echo.Context) error {
 	if err != nil {
 		return e.JSON(http.StatusBadRequest, structures.AuthResponse{Message: err.Error(), Status: "failed"})
 	}
-	return e.JSON(http.StatusOK, structures.FundRequestResponse{Message: "all fund requests fetched successfully", Status: "success", Data: res})
+	return e.JSON(http.StatusOK, structures.FundRequestResponse{Message: "fund requests fetched successfully", Status: "success", Data: res})
 }
 
 func (fh *fundRequestHandler) GetAllFundRequests(e echo.Context) error {

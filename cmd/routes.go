@@ -39,8 +39,6 @@ func (r *Routes) AdminRoutes(rg *echo.Group) {
 	rg.POST("/register", authHandler.RegisterAdminRequest)
 	rg.POST("/login", authHandler.LoginAdminRequest)
 	rg.POST("/create/md", authHandler.RegisterMasterDistributorRequest)
-	rg.POST("/create/distributor", authHandler.RegisterDistributorRequest)
-	rg.POST("/create/user", authHandler.RegisterUserRequest)
 
 	// Fund Request
 	var fundRequestRepo = repositories.NewFundRequestRepository(
@@ -71,6 +69,7 @@ func (r *Routes) MasterDistributorRoutes(rg *echo.Group) {
 	)
 	var authHandler = handlers.NewAuthHandler(authRepo)
 	rg.POST("/login", authHandler.LoginMasterDistributorRequest)
+	rg.POST("/create/distributor", authHandler.RegisterDistributorRequest)
 
 	// Fund Request
 	var fundRequestRepo = repositories.NewFundRequestRepository(
@@ -99,6 +98,7 @@ func (r *Routes) DistributorRoutes(rg *echo.Group) {
 	)
 	var authHandler = handlers.NewAuthHandler(authRepo)
 	rg.POST("/login", authHandler.LoginDistributorRequest)
+	rg.POST("/create/user", authHandler.RegisterUserRequest)
 
 	// Fund Request
 	var fundRequestRepo = repositories.NewFundRequestRepository(
