@@ -144,4 +144,11 @@ func (r *Routes) UserRoutes(rg *echo.Group) {
 	var walletHandler = handlers.NewWalletHandler(walletRepo)
 	rg.GET("/wallet/get/balance/:user_id", walletHandler.GetUserWalletBalanceRequest)
 	rg.GET("/wallet/get/transactions/:user_id", walletHandler.GetUserWalletTransactionsRequest)
+
+	// Payout Request
+	var payoutRepo = repositories.NewPayoutRepository(
+		r.Query,
+	)
+	var payoutHandler = handlers.NewPayoutHandler(payoutRepo)
+	rg.POST("/user/payout", payoutHandler.PayoutRequest)
 }
