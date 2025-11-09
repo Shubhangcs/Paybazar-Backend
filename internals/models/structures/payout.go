@@ -32,7 +32,7 @@ type PayoutInitilizationRequest struct {
 
 type PayoutApiRequest struct {
 	PartnerRequestID string `json:"partner_request_id"`
-	MobileNumber     string `json:"mobile_ni"`
+	MobileNumber     string `json:"mobile_no"`
 	AccountNumber    string `json:"account_no"`
 	IFSCCode         string `json:"ifsc"`
 	BankName         string `json:"bank_name"`
