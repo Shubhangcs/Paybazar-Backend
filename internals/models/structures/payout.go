@@ -42,7 +42,7 @@ type PayoutApiRequest struct {
 }
 
 type PayoutApiSuccessResponse struct {
-	Error                 string `json:"error"`
+	Error                 int `json:"error"`
 	Message               string `json:"msg"`
 	Status                string `json:"status"`
 	OrderID               string `json:"orderid"`
@@ -51,6 +51,6 @@ type PayoutApiSuccessResponse struct {
 }
 
 type PayoutApiFailureResponse struct {
-	Error   string `json:"error"`
+	Error   int `json:"error"`
 	Message string `json:"message"`
 }
