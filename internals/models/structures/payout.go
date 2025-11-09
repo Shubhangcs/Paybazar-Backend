@@ -42,15 +42,15 @@ type PayoutApiRequest struct {
 }
 
 type PayoutApiSuccessResponse struct {
-	Error                 int `json:"error"`
+	Error                 int    `json:"error"`
 	Message               string `json:"msg"`
-	Status                string `json:"status"`
+	Status                int    `json:"status"`
 	OrderID               string `json:"orderid"`
 	OperatorTransactionID string `json:"optransid"`
 	PartnerRequestID      string `json:"partnerreqid"`
 }
 
 type PayoutApiFailureResponse struct {
-	Error   int `json:"error"`
+	Error   int    `json:"error"`
 	Message string `json:"message"`
 }
