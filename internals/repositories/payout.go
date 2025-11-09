@@ -76,7 +76,7 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 	if token == "" {
 		return "", fmt.Errorf("missing RKIT_API_TOKEN")
 	}
-	var url string = "https://v2bapi.rechargekit.biz/rkitpayout/payoutTransfer"
+	var url string = "https://v2bapi.rechargkit.biz/rkitpayout/payoutTransfer"
 	reqBody, err := json.Marshal(apiReqBody)
 	if err != nil {
 		return "", fmt.Errorf("failed to encode api request json: %w", err)
