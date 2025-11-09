@@ -32,6 +32,8 @@ func start() {
 	// middlewares
 	var middlewares *Middlewares = newMiddleware()
 	router.Use(middlewares.LoggerMiddleware)
+	router.Use(middlewares.CORSMiddleware)
+
 
 	// routes
 	var routes *Routes = newRoutes(query)

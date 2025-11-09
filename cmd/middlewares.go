@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -83,5 +84,23 @@ func writeLog(entry LogEntryModel) {
 	// Writing to json file
 	if _, err = file.Write(append(data, '\n')); err != nil {
 		log.Fatalf("failed to write the log to json file: %v", err)
+	}
+}
+
+func (m *Middlewares) CORSMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		res := c.Response()
+		req := c.Request()
+
+		res.Header().Set("Access-Control-Allow-Origin", "*")
+		res.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		res.Header().Set("Access-Control-Allow-Headers", "*")
+		res.Header().Set("Access-Control-Expose-Headers", "*")
+
+		if req.Method == http.MethodOptions {
+			return c.NoContent(http.StatusNoContent)
+		}
+
+		return next(c)
 	}
 }
