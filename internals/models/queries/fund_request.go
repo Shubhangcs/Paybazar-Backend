@@ -210,18 +210,19 @@ func (q *Query) CreateFundRequest(req *structures.CreateFundRequestModel) error 
 	return err
 }
 
+
 func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequestModel) error {
 	ctx := context.Background()
 
 	tx, err := q.Pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("begin tx: %w", err)
 	}
 	defer func() {
-		_ = tx.Rollback(ctx) // safe to call; commit will clear it
+		_ = tx.Rollback(ctx) // safe no-op if already committed
 	}()
 
-	// 1) Lock and read fund_request
+	// 1) Lock and read fund_request (ensure it's PENDING)
 	var (
 		requesterID       string
 		requesterType     string
@@ -232,17 +233,17 @@ func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequestModel) error 
 	err = tx.QueryRow(ctx, `
 		SELECT requester_id, requester_type, requester_unique_id, requester_name, amount
 		FROM fund_requests
-		WHERE request_id = $1 AND admin_id = $2
+		WHERE request_id = $1 AND admin_id = $2 AND request_status = 'PENDING'
 		FOR UPDATE
 	`, req.RequestID, req.AdminID).Scan(&requesterID, &requesterType, &requesterUniqueID, &requesterName, &amountStr)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return fmt.Errorf("fund request not found for given request_id and admin_id")
+			return fmt.Errorf("fund request not found or not pending for given request_id and admin_id")
 		}
 		return fmt.Errorf("select fund_request: %w", err)
 	}
 
-	// 2) Lock admin row and check balance
+	// 2) Lock admin row and get admin name + ensure balance exists
 	var adminBalanceStr string
 	var adminName string
 	err = tx.QueryRow(ctx, `
@@ -258,12 +259,12 @@ func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequestModel) error 
 		return fmt.Errorf("select admin: %w", err)
 	}
 
-	// 3) Compare balances (use numeric comparison in SQL to avoid float issues)
-	//    We'll run an SQL check that admin_balance >= amount. If not, return error.
+	// 3) Ensure admin has sufficient balance
 	var sufficient bool
 	err = tx.QueryRow(ctx, `
-		SELECT (admin_wallet_balance >= $1::numeric) 
-		FROM admins WHERE admin_id = $2
+		SELECT (admin_wallet_balance >= $1::numeric)
+		FROM admins
+		WHERE admin_id = $2
 	`, amountStr, req.AdminID).Scan(&sufficient)
 	if err != nil {
 		return fmt.Errorf("check admin balance: %w", err)
@@ -272,7 +273,7 @@ func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequestModel) error 
 		return fmt.Errorf("admin has insufficient wallet balance")
 	}
 
-	// 4) Lock requester row and read balance (and name if needed) for update
+	// 4) Lock requester row and read balance for update (just to ensure existence)
 	var requesterBalanceStr string
 	switch requesterType {
 	case "USER":
@@ -306,8 +307,7 @@ func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequestModel) error 
 		return fmt.Errorf("select requester wallet: %w", err)
 	}
 
-	// 5) Perform wallet updates and mark request approved
-	// Update admin wallet: subtract amount
+	// 5) Update admin wallet: subtract amount
 	_, err = tx.Exec(ctx, `
 		UPDATE admins
 		SET admin_wallet_balance = admin_wallet_balance - $1::numeric,
@@ -318,7 +318,7 @@ func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequestModel) error 
 		return fmt.Errorf("update admin wallet: %w", err)
 	}
 
-	// Update requester wallet: add amount
+	// 6) Update requester wallet: add amount
 	switch requesterType {
 	case "USER":
 		_, err = tx.Exec(ctx, `
@@ -346,8 +346,8 @@ func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequestModel) error 
 		return fmt.Errorf("update requester wallet: %w", err)
 	}
 
-	// 6) Mark fund_request as APPROVED
-	_, err = tx.Exec(ctx, `
+	// 7) Mark fund_request as APPROVED (ensure we update the same row)
+	res, err := tx.Exec(ctx, `
 		UPDATE fund_requests
 		SET request_status = 'APPROVED', updated_at = NOW()
 		WHERE request_id = $1
@@ -355,10 +355,11 @@ func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequestModel) error 
 	if err != nil {
 		return fmt.Errorf("update fund_request status: %w", err)
 	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("failed to update fund_request status")
+	}
 
-	// 7) Insert two transactions (admin debit, requester credit)
-	// Use request_id as transaction_id (so both relate to same originating request).
-	// transaction_type: admin -> DEBIT, requester -> CREDIT
+	// 8) Insert two transactions (each with its own transaction_id)
 	_, err = tx.Exec(ctx, `
 		INSERT INTO transactions (
 			transaction_id,
@@ -375,41 +376,40 @@ func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequestModel) error 
 			remarks,
 			created_at
 		) VALUES (
-			$1::uuid,         -- transaction_id (request_id)
-			$2::uuid,         -- transactor_id (admin)
-			$3::uuid,         -- receiver_id (requester)
-			$4,               -- transactor_name (admin_name)
-			$5,               -- receiver_name (requester_name)
-			'ADMIN',          -- transactor_type
-			$6,               -- receiver_type (USER/DISTRIBUTOR/MASTER_DISTRIBUTOR)
-			'DEBIT',          -- transaction_type
-			'FUND_REQUEST',   -- transaction_service
-			$7::numeric,      -- amount
-			'SUCCESS',        -- transaction_status
-			'Fund request approved - admin debit',
+			gen_random_uuid(),         -- unique transaction_id for admin debit
+			$2::uuid,                  -- transactor_id (admin)
+			$3::uuid,                  -- receiver_id (requester)
+			$4,                        -- transactor_name (admin_name)
+			$5,                        -- receiver_name (requester_name)
+			'ADMIN',                   -- transactor_type
+			$6,                        -- receiver_type (USER|DISTRIBUTOR|MASTER_DISTRIBUTOR)
+			'DEBIT',                   -- transaction_type
+			'FUND_REQUEST',            -- transaction_service
+			$7::numeric,               -- amount
+			'SUCCESS',                 -- transaction_status
+			('Fund request approved - admin debit | request_id=' || $1::text),
 			NOW()
-		),
-		(
-			$1::uuid,         -- same transaction_id to correlate
-			$3::uuid,         -- transactor_id (requester)
-			$2::uuid,         -- receiver_id (admin)
-			$5,               -- transactor_name (requester_name)
-			$4,               -- receiver_name (admin_name)
-			$6,               -- transactor_type (USER/DISTRIBUTOR/MASTER_DISTRIBUTOR)
-			'ADMIN',          -- receiver_type
-			'CREDIT',         -- transaction_type
+		), (
+			gen_random_uuid(),         -- unique transaction_id for requester credit
+			$3::uuid,                  -- transactor_id (requester)
+			$2::uuid,                  -- receiver_id (admin)
+			$5,                        -- transactor_name (requester_name)
+			$4,                        -- receiver_name (admin_name)
+			$6,                        -- transactor_type (USER|DISTRIBUTOR|MASTER_DISTRIBUTOR)
+			'ADMIN',                   -- receiver_type
+			'CREDIT',                  -- transaction_type
 			'FUND_REQUEST',
 			$7::numeric,
 			'SUCCESS',
-			'Fund request approved - requester credit',
+			('Fund request approved - requester credit | request_id=' || $1::text),
 			NOW()
-		)
+		);
 	`, req.RequestID, req.AdminID, requesterID, adminName, requesterName, requesterType, amountStr)
 	if err != nil {
 		return fmt.Errorf("insert transactions: %w", err)
 	}
 
-	// 8) Commit
+	// 9) Commit
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
 	}
