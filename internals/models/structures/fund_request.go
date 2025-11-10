@@ -3,6 +3,7 @@ package structures
 type FundRequest struct {
 	AdminId       string `json:"admin_id" validate:"required,uuid4"`
 	RequestId     string `json:"request_id"`
+	RequesterName string `json:"requester_name" validate:"required"`
 	RequesterId   string `json:"requester_id" validate:"required,uuid4"`
 	RequesterType string `json:"requester_type" validate:"required"`
 	Amount        string `json:"amount" validate:"required"`
