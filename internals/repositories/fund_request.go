@@ -19,7 +19,7 @@ func NewFundRequestRepository(query *queries.Query) *fundRequestRepo {
 }
 
 func (fr *fundRequestRepo) CreateFundRequest(e echo.Context) (string, error) {
-	var req structures.FundRequest
+	var req structures.CreateFundRequestModel
 	if err := e.Bind(&req); err != nil {
 		return "", fmt.Errorf("invalid request format: %w", err)
 	}
@@ -43,7 +43,7 @@ func (fr *fundRequestRepo) RejectFundRequest(e echo.Context) (string, error) {
 }
 
 func (fr *fundRequestRepo) AcceptFundRequest(e echo.Context) (string, error) {
-	var req structures.AcceptFundRequest
+	var req structures.AcceptFundRequestModel
 	if err := e.Bind(&req); err != nil {
 		return "", fmt.Errorf("invalid request format: %w", err)
 	}
@@ -57,7 +57,7 @@ func (fr *fundRequestRepo) AcceptFundRequest(e echo.Context) (string, error) {
 	return "fund request accepted successfully", nil
 }
 
-func (fr *fundRequestRepo) GetFundRequestsById(e echo.Context) (*[]structures.FundRequest, error) {
+func (fr *fundRequestRepo) GetFundRequestsById(e echo.Context) (*[]structures.GetFundRequestModel, error) {
 	var req string = e.Param("requester_id")
 	res, err := fr.query.GetFundRequestsById(req)
 	if err != nil {
@@ -66,7 +66,7 @@ func (fr *fundRequestRepo) GetFundRequestsById(e echo.Context) (*[]structures.Fu
 	return res, err
 }
 
-func (fr *fundRequestRepo) GetAllFundRequests(e echo.Context) (*[]structures.FundRequest, error) {
+func (fr *fundRequestRepo) GetAllFundRequests(e echo.Context) (*[]structures.GetFundRequestModel, error) {
 	var req = e.Param("admin_id")
 	res, err := fr.query.GetAllFundRequests(req)
 	if err != nil {

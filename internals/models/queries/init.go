@@ -15,7 +15,6 @@ type Query struct {
 
 func NewQuery(pool *pgxpool.Pool) *Query { return &Query{Pool: pool} }
 
-// InitializeDatabase creates/updates all required DB objects in a single transaction.
 func (qr *Query) InitializeDatabase() {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
@@ -54,6 +53,7 @@ func (qr *Query) InitializeDatabase() {
 			admin_phone TEXT UNIQUE NOT NULL,
 			admin_email TEXT UNIQUE NOT NULL,
 			admin_password TEXT NOT NULL,
+			admin_wallet_balance NUMERIC(20,2) NOT NULL DEFAULT 0,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);`,
@@ -72,6 +72,7 @@ func (qr *Query) InitializeDatabase() {
 			master_distributor_phone TEXT UNIQUE NOT NULL,
 			master_distributor_email TEXT UNIQUE NOT NULL,
 			master_distributor_password TEXT NOT NULL,
+			master_distributor_wallet_balance NUMERIC(20,2) NOT NULL DEFAULT 0,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE
@@ -92,6 +93,7 @@ func (qr *Query) InitializeDatabase() {
 			distributor_phone TEXT UNIQUE NOT NULL,
 			distributor_email TEXT UNIQUE NOT NULL,
 			distributor_password TEXT NOT NULL,
+			distributor_wallet_balance NUMERIC(20,2) NOT NULL DEFAULT 0,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			FOREIGN KEY (master_distributor_id) REFERENCES master_distributors(master_distributor_id) ON DELETE CASCADE,
@@ -123,6 +125,7 @@ func (qr *Query) InitializeDatabase() {
 			user_address TEXT,
 			user_pincode TEXT,
 			user_kyc_status BOOLEAN NOT NULL DEFAULT FALSE,
+			user_wallet_balance NUMERIC(20,2) NOT NULL DEFAULT 0,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE,
@@ -134,112 +137,10 @@ func (qr *Query) InitializeDatabase() {
 			FOR EACH ROW EXECUTE FUNCTION set_updated_at();`,
 
 		// ============================================================
-		// Wallets (one per role)
-		// ============================================================
-		`CREATE TABLE IF NOT EXISTS admin_wallets(
-			wallet_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			admin_id UUID UNIQUE NOT NULL,
-			balance NUMERIC(20,2) NOT NULL DEFAULT 0,
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE
-		);`,
-		`DROP TRIGGER IF EXISTS trg_admin_wallets_updated_at ON admin_wallets;`,
-		`CREATE TRIGGER trg_admin_wallets_updated_at BEFORE UPDATE ON admin_wallets
-			FOR EACH ROW EXECUTE FUNCTION set_updated_at();`,
-
-		`CREATE TABLE IF NOT EXISTS master_distributor_wallets(
-			wallet_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			master_distributor_id UUID UNIQUE NOT NULL,
-			balance NUMERIC(20,2) NOT NULL DEFAULT 0,
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			FOREIGN KEY (master_distributor_id) REFERENCES master_distributors(master_distributor_id) ON DELETE CASCADE
-		);`,
-		`DROP TRIGGER IF EXISTS trg_master_distributor_wallets_updated_at ON master_distributor_wallets;`,
-		`CREATE TRIGGER trg_master_distributor_wallets_updated_at BEFORE UPDATE ON master_distributor_wallets
-			FOR EACH ROW EXECUTE FUNCTION set_updated_at();`,
-
-		`CREATE TABLE IF NOT EXISTS distributor_wallets(
-			wallet_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			distributor_id UUID UNIQUE NOT NULL,
-			balance NUMERIC(20,2) NOT NULL DEFAULT 0,
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			FOREIGN KEY (distributor_id) REFERENCES distributors(distributor_id) ON DELETE CASCADE
-		);`,
-		`DROP TRIGGER IF EXISTS trg_distributor_wallets_updated_at ON distributor_wallets;`,
-		`CREATE TRIGGER trg_distributor_wallets_updated_at BEFORE UPDATE ON distributor_wallets
-			FOR EACH ROW EXECUTE FUNCTION set_updated_at();`,
-
-		`CREATE TABLE IF NOT EXISTS user_wallets(
-			wallet_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			user_id UUID UNIQUE NOT NULL,
-			balance NUMERIC(20,2) NOT NULL DEFAULT 0,
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-		);`,
-		`DROP TRIGGER IF EXISTS trg_user_wallets_updated_at ON user_wallets;`,
-		`CREATE TRIGGER trg_user_wallets_updated_at BEFORE UPDATE ON user_wallets
-			FOR EACH ROW EXECUTE FUNCTION set_updated_at();`,
-
-		// ============================================================
-		// Transactions (NULL-safety on TEXT columns)
-		// ============================================================
-		`CREATE TABLE IF NOT EXISTS admin_wallet_transactions(
-			transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			admin_id UUID NOT NULL,
-			amount NUMERIC(20,2) NOT NULL DEFAULT 0,
-			transaction_type TEXT NOT NULL CHECK (transaction_type IN ('CREDIT','DEBIT')),
-			transaction_service TEXT NOT NULL DEFAULT '',
-			reference_id TEXT NOT NULL DEFAULT '',
-			remarks TEXT NOT NULL DEFAULT '',
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE
-		);`,
-
-		`CREATE TABLE IF NOT EXISTS master_distributor_wallet_transactions(
-			transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			master_distributor_id UUID NOT NULL,
-			amount NUMERIC(20,2) NOT NULL DEFAULT 0,
-			transaction_type TEXT NOT NULL CHECK (transaction_type IN ('CREDIT','DEBIT')),
-			transaction_service TEXT NOT NULL DEFAULT '',
-			reference_id TEXT NOT NULL DEFAULT '',
-			remarks TEXT NOT NULL DEFAULT '',
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			FOREIGN KEY (master_distributor_id) REFERENCES master_distributors(master_distributor_id) ON DELETE CASCADE
-		);`,
-
-		`CREATE TABLE IF NOT EXISTS distributor_wallet_transactions(
-			transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			distributor_id UUID NOT NULL,
-			amount NUMERIC(20,2) NOT NULL DEFAULT 0,
-			transaction_type TEXT NOT NULL CHECK (transaction_type IN ('CREDIT','DEBIT')),
-			transaction_service TEXT NOT NULL DEFAULT '',
-			reference_id TEXT NOT NULL DEFAULT '',
-			remarks TEXT NOT NULL DEFAULT '',
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			FOREIGN KEY (distributor_id) REFERENCES distributors(distributor_id) ON DELETE CASCADE
-		);`,
-
-		`CREATE TABLE IF NOT EXISTS user_wallet_transactions(
-			transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			user_id UUID NOT NULL,
-			amount NUMERIC(20,2) NOT NULL DEFAULT 0,
-			transaction_type TEXT NOT NULL CHECK (transaction_type IN ('CREDIT','DEBIT')),
-			transaction_service TEXT NOT NULL DEFAULT '',
-			reference_id TEXT NOT NULL DEFAULT '',
-			remarks TEXT NOT NULL DEFAULT '',
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-		);`,
-
-		// ============================================================
 		// Payout Service
 		// ============================================================
 		`CREATE TABLE IF NOT EXISTS payout_service (
-			transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			payout_transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			operator_transaction_id TEXT,
 			order_id TEXT,
 			user_id UUID NOT NULL,
@@ -262,22 +163,24 @@ func (qr *Query) InitializeDatabase() {
 			FOR EACH ROW EXECUTE FUNCTION set_updated_at();`,
 
 		// ============================================================
-		// Fund Requests (NULL-safety on optional text fields; keep utr_number nullable & unique)
+		// Fund Requests
 		// ============================================================
 		`CREATE TABLE IF NOT EXISTS fund_requests (
 			admin_id UUID NOT NULL,
 			request_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			request_unique_id TEXT UNIQUE NOT NULL DEFAULT ('FR' || LPAD(nextval('fund_request_seq')::TEXT, 7, '0')),
 			requester_id UUID NOT NULL,
+			requester_unique_id TEXT NOT NULL,
+			requester_name TEXT NOT NULL,
 			requester_type TEXT NOT NULL CHECK (requester_type IN ('USER','DISTRIBUTOR','MASTER_DISTRIBUTOR')),
 			amount NUMERIC(20,2) NOT NULL DEFAULT 0,
-			bank_name TEXT NOT NULL DEFAULT '',
-			account_number TEXT NOT NULL DEFAULT '',
-			ifsc_code TEXT NOT NULL DEFAULT '',
-			bank_branch TEXT NOT NULL DEFAULT '',
-			utr_number TEXT NOT NULL DEFAULT '', -- nullable on purpose
+			bank_name TEXT NOT NULL,
+			account_number TEXT NOT NULL,
+			ifsc_code TEXT NOT NULL,
+			bank_branch TEXT NOT NULL,
+			utr_number TEXT UNIQUE NOT NULL,
 			request_status TEXT NOT NULL CHECK (request_status IN ('PENDING','APPROVED','REJECTED')),
-			remarks TEXT NOT NULL DEFAULT '',
+			remarks TEXT,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE
@@ -287,7 +190,7 @@ func (qr *Query) InitializeDatabase() {
 			FOR EACH ROW EXECUTE FUNCTION set_updated_at();`,
 
 		// ============================================================
-		// OTPs (auto-clean trigger)
+		// OTPs
 		// ============================================================
 		`CREATE TABLE IF NOT EXISTS otps (
 			otp CHAR(4) NOT NULL DEFAULT LPAD((FLOOR(random()*10000))::INT::TEXT, 4, '0'),
@@ -304,7 +207,38 @@ func (qr *Query) InitializeDatabase() {
 		`DROP TRIGGER IF EXISTS trg_delete_expired_otps ON otps;`,
 		`CREATE TRIGGER trg_delete_expired_otps
 			AFTER INSERT ON otps
-			EXECUTE FUNCTION delete_expired_otps();`,
+			FOR EACH ROW EXECUTE FUNCTION delete_expired_otps();`,
+
+		// ============================================================
+		// Unified Transactions
+		// ============================================================
+		`CREATE TABLE IF NOT EXISTS transactions (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			transaction_id UUID,
+			transactor_id UUID NOT NULL,
+			receiver_id UUID,
+			transactor_name TEXT,
+			receiver_name TEXT,
+			transactor_type TEXT NOT NULL CHECK (transactor_type IN ('ADMIN','MASTER_DISTRIBUTOR','DISTRIBUTOR','USER')),
+			receiver_type TEXT CHECK (receiver_type IN ('ADMIN','MASTER_DISTRIBUTOR','DISTRIBUTOR','USER')),
+			transaction_type TEXT NOT NULL CHECK (transaction_type IN ('CREDIT','DEBIT')),
+			transaction_service TEXT NOT NULL CHECK (transaction_service IN ('FUND_REQUEST','TOPUP','PAYOUT','COMMISSION')),
+			amount NUMERIC(20,2) NOT NULL CHECK (amount >= 0),
+			transaction_status TEXT CHECK (transaction_status IN ('PENDING','SUCCESS','FAILED')),
+			remarks TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`DROP TRIGGER IF EXISTS trg_transactions_updated_at ON transactions;`,
+		`CREATE TRIGGER trg_transactions_updated_at
+			BEFORE UPDATE ON transactions
+			FOR EACH ROW EXECUTE FUNCTION set_updated_at();`,
+		`CREATE INDEX IF NOT EXISTS idx_transactions_transactor
+			ON transactions (transactor_type, transactor_id, created_at DESC);`,
+		`CREATE INDEX IF NOT EXISTS idx_transactions_service
+			ON transactions (transaction_service);`,
+		`CREATE INDEX IF NOT EXISTS idx_transactions_status
+			ON transactions (transaction_status);`,
 	}
 
 	tx, err := qr.Pool.BeginTx(ctx, pgx.TxOptions{})
@@ -322,5 +256,6 @@ func (qr *Query) InitializeDatabase() {
 	if err := tx.Commit(ctx); err != nil {
 		log.Fatalf("failed to commit transaction: %v", err)
 	}
+
 	log.Println("database initialized successfully")
 }

@@ -9,17 +9,18 @@ import (
 
 func (q *Query) GetAllMasterDistributorsByID(adminId string) (*[]structures.MasterDistributorGetResponse, error) {
 	const query = `
-	SELECT
-		md.master_distributor_unique_id,
-		md.master_distributor_name,
-		md.master_distributor_email,
-		md.master_distributor_phone,
-		COALESCE(mdw.balance::TEXT, '0') AS master_distributor_wallet_balance
-	FROM master_distributors md
-	LEFT JOIN master_distributor_wallets mdw
-		ON mdw.master_distributor_id = md.master_distributor_id
-	WHERE md.admin_id = $1
-	ORDER BY md.created_at DESC;
+		SELECT 
+			master_distributor_unique_id,
+			master_distributor_name,
+			master_distributor_email,
+			master_distributor_phone,
+			master_distributor_wallet_balance
+		FROM 
+			master_distributors
+		WHERE 
+			admin_id = $1
+		ORDER BY 
+			created_at DESC;
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -45,25 +46,28 @@ func (q *Query) GetAllMasterDistributorsByID(adminId string) (*[]structures.Mast
 		}
 		out = append(out, r)
 	}
-	if rows.Err() != nil {
-		return nil, rows.Err()
+
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
+
 	return &out, nil
 }
 
 func (q *Query) GetAllDistributorsByMasterDistributorID(masterDistributorId string) (*[]structures.DistributorGetResponse, error) {
 	const query = `
-	SELECT
-		d.distributor_unique_id,
-		d.distributor_name,
-		d.distributor_email,
-		d.distributor_phone,
-		COALESCE(dw.balance::TEXT, '0') AS distributor_wallet_balance
-	FROM distributors d
-	LEFT JOIN distributor_wallets dw
-		ON dw.distributor_id = d.distributor_id
-	WHERE d.master_distributor_id = $1
-	ORDER BY d.created_at DESC;
+		SELECT
+			distributor_unique_id,
+			distributor_name,
+			distributor_email,
+			distributor_phone,
+			distributor_wallet_balance
+		FROM
+			distributors
+		WHERE
+			master_distributor_id = $1
+		ORDER BY
+			created_at DESC;
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -89,25 +93,28 @@ func (q *Query) GetAllDistributorsByMasterDistributorID(masterDistributorId stri
 		}
 		out = append(out, r)
 	}
-	if rows.Err() != nil {
-		return nil, rows.Err()
+
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
+
 	return &out, nil
 }
 
 func (q *Query) GetAllUsersByDistributorID(distributorId string) (*[]structures.UserGetResponse, error) {
 	const query = `
-	SELECT
-		u.user_unique_id,
-		u.user_name,
-		u.user_email,
-		u.user_phone,
-		COALESCE(uw.balance::TEXT, '0') AS user_wallet_balance
-	FROM users u
-	LEFT JOIN user_wallets uw
-		ON uw.user_id = u.user_id
-	WHERE u.distributor_id = $1
-	ORDER BY u.created_at DESC;
+		SELECT
+			user_unique_id,
+			user_name,
+			user_email,
+			user_phone,
+			user_wallet_balance
+		FROM
+			users
+		WHERE
+			distributor_id = $1
+		ORDER BY
+			created_at DESC;
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -133,8 +140,10 @@ func (q *Query) GetAllUsersByDistributorID(distributorId string) (*[]structures.
 		}
 		out = append(out, r)
 	}
-	if rows.Err() != nil {
-		return nil, rows.Err()
+
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
+
 	return &out, nil
 }

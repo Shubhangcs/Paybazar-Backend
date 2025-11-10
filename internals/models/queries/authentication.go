@@ -10,26 +10,19 @@ func (q *Query) CreateAdmin(req *structures.AdminRegisterRequest) (*structures.A
 	var res structures.AdminAuthResponse
 
 	query := `
-	WITH ins_admin AS (
 		INSERT INTO admins (
 			admin_name,
 			admin_phone,
 			admin_email,
 			admin_password
 		)
-		VALUES ($1, $2, $3, $4)
-		RETURNING admin_id, admin_unique_id, admin_name
-	),
-	ins_wallet AS (
-		INSERT INTO admin_wallets (admin_id)
-		SELECT admin_id FROM ins_admin
-		RETURNING 1
-	)
-	SELECT
-		a.admin_id::TEXT AS admin_id,
-		a.admin_unique_id,
-		a.admin_name
-	FROM ins_admin a;
+		VALUES (
+			$1,  -- admin_name
+			$2,  -- admin_phone
+			$3,  -- admin_email
+			$4   -- hashed password passed directly
+		)
+		RETURNING admin_id, admin_unique_id, admin_name;
 	`
 
 	err := q.Pool.QueryRow(
@@ -48,7 +41,6 @@ func (q *Query) CreateMasterDistributor(req *structures.MasterDistributorRegiste
 	var res structures.MasterDistributorAuthResponse
 
 	query := `
-	WITH ins_master_distributor AS (
 		INSERT INTO master_distributors (
 			admin_id,
 			master_distributor_name,
@@ -56,24 +48,18 @@ func (q *Query) CreateMasterDistributor(req *structures.MasterDistributorRegiste
 			master_distributor_email,
 			master_distributor_password
 		)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES (
+			$1,  -- admin_id
+			$2,  -- master_distributor_name
+			$3,  -- master_distributor_phone
+			$4,  -- master_distributor_email
+			$5   -- hashed password passed directly
+		)
 		RETURNING 
-			master_distributor_id, 
-			master_distributor_unique_id, 
-			master_distributor_name, 
-			admin_id
-	),
-	ins_wallet AS (
-		INSERT INTO master_distributor_wallets (master_distributor_id)
-		SELECT master_distributor_id FROM ins_master_distributor
-		RETURNING 1
-	)
-	SELECT
-		m.master_distributor_id::TEXT AS master_distributor_id,
-		m.master_distributor_unique_id,
-		m.master_distributor_name,
-		m.admin_id::TEXT AS admin_id
-	FROM ins_master_distributor m;
+			master_distributor_id,
+			master_distributor_unique_id,
+			master_distributor_name,
+			admin_id;
 	`
 
 	err := q.Pool.QueryRow(
@@ -98,52 +84,45 @@ func (q *Query) CreateDistributor(req *structures.DistributorRegisterRequest) (*
 	var res structures.DistributorAuthResponse
 
 	query := `
-	WITH ins_distributor AS (
 		INSERT INTO distributors (
-			admin_id,
 			master_distributor_id,
+			admin_id,
 			distributor_name,
 			distributor_phone,
 			distributor_email,
 			distributor_password
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES (
+			$1,  -- master_distributor_id
+			$2,  -- admin_id
+			$3,  -- distributor_name
+			$4,  -- distributor_phone
+			$5,  -- distributor_email
+			$6   -- hashed password passed directly
+		)
 		RETURNING 
-			distributor_id, 
-			distributor_unique_id, 
-			distributor_name, 
-			admin_id, 
-			master_distributor_id
-	),
-	ins_wallet AS (
-		INSERT INTO distributor_wallets (distributor_id)
-		SELECT distributor_id FROM ins_distributor
-		RETURNING 1
-	)
-	SELECT
-		d.distributor_id::TEXT AS distributor_id,
-		d.distributor_unique_id,
-		d.distributor_name,
-		d.admin_id::TEXT AS admin_id,
-		d.master_distributor_id::TEXT AS master_distributor_id
-	FROM ins_distributor d;
+			distributor_id,
+			distributor_unique_id,
+			master_distributor_id,
+			admin_id,
+			distributor_name;
 	`
 
 	err := q.Pool.QueryRow(
 		context.Background(),
 		query,
-		req.AdminID,
-		req.MasterDistributorID,
-		req.DistributorName,
-		req.DistributorPhone,
-		req.DistributorEmail,
-		req.DistributorPassword,
+		req.MasterDistributorID, // $1
+		req.AdminID,             // $2
+		req.DistributorName,     // $3
+		req.DistributorPhone,    // $4
+		req.DistributorEmail,    // $5
+		req.DistributorPassword, // $6
 	).Scan(
 		&res.DistributorID,
 		&res.DistributorUniqueID,
-		&res.DistributorName,
-		&res.AdminID,
 		&res.MasterDistributorID,
+		&res.AdminID,
+		&res.DistributorName,
 	)
 
 	return &res, err
@@ -153,7 +132,6 @@ func (q *Query) CreateUser(req *structures.UserRegistrationRequest) (*structures
 	var res structures.UserAuthResponse
 
 	query := `
-	WITH ins_user AS (
 		INSERT INTO users (
 			admin_id,
 			master_distributor_id,
@@ -163,47 +141,41 @@ func (q *Query) CreateUser(req *structures.UserRegistrationRequest) (*structures
 			user_email,
 			user_password
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES (
+			$1,  -- admin_id
+			$2,  -- master_distributor_id
+			$3,  -- distributor_id
+			$4,  -- user_name
+			$5,  -- user_phone
+			$6,  -- user_email
+			$7   -- hashed password passed directly
+		)
 		RETURNING 
-			user_id, 
-			user_unique_id, 
-			user_name, 
-			admin_id, 
-			master_distributor_id, 
-			distributor_id
-	),
-	ins_wallet AS (
-		INSERT INTO user_wallets (user_id)
-		SELECT user_id FROM ins_user
-		RETURNING 1
-	)
-	SELECT
-		u.user_id::TEXT AS user_id,
-		u.user_unique_id,
-		u.user_name,
-		u.admin_id::TEXT AS admin_id,
-		u.master_distributor_id::TEXT AS master_distributor_id,
-		u.distributor_id::TEXT AS distributor_id
-	FROM ins_user u;
+			user_id,
+			user_unique_id,
+			user_name,
+			distributor_id,
+			master_distributor_id,
+			admin_id;
 	`
 
 	err := q.Pool.QueryRow(
 		context.Background(),
 		query,
-		req.AdminID,
-		req.MasterDistributorID,
-		req.DistributorID,
-		req.UserName,
-		req.UserPhone,
-		req.UserEmail,
-		req.UserPassword,
+		req.AdminID,             // $1
+		req.MasterDistributorID, // $2
+		req.DistributorID,       // $3
+		req.UserName,            // $4
+		req.UserPhone,           // $5
+		req.UserEmail,           // $6
+		req.UserPassword,        // $7
 	).Scan(
 		&res.UserID,
 		&res.UserUniqueID,
 		&res.UserName,
-		&res.AdminID,
-		&res.MasterDistributorID,
 		&res.DistributorID,
+		&res.MasterDistributorID,
+		&res.AdminID,
 	)
 
 	return &res, err

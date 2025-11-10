@@ -9,6 +9,6 @@ type FundRequestInterface interface {
 	CreateFundRequest(echo.Context) (string, error)
 	RejectFundRequest(echo.Context) (string, error)
 	AcceptFundRequest(echo.Context) (string, error)
-	GetFundRequestsById(echo.Context) (*[]structures.FundRequest, error)
-	GetAllFundRequests(echo.Context) (*[]structures.FundRequest, error)
+	GetFundRequestsById(echo.Context) (*[]structures.GetFundRequestModel, error)
+	GetAllFundRequests(echo.Context) (*[]structures.GetFundRequestModel, error)
 }

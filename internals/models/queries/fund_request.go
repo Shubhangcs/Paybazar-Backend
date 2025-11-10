@@ -2,150 +2,150 @@ package queries
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/structures"
+	"github.com/jackc/pgx/v5"
 )
 
-func (q *Query) GetFundRequestsById(requesterId string) (*[]structures.FundRequest, error) {
-	var fundRequests []structures.FundRequest
+func (q *Query) GetFundRequestsById(requesterId string) (*[]structures.GetFundRequestModel, error) {
+	var fundRequests []structures.GetFundRequestModel
 
-	query := `
-	SELECT 
-	fr.admin_id,
-	fr.request_id,
-	fr.requester_id,
-	fr.requester_type,
-	fr.amount,
-	fr.bank_name,
-	fr.account_number,
-	fr.ifsc_code,
-	fr.bank_branch,
-	fr.utr_number,
-	fr.remarks,
-	fr.request_status,
-	CASE 
-		WHEN fr.requester_type = 'USER' THEN u.user_name
-		WHEN fr.requester_type = 'DISTRIBUTOR' THEN d.distributor_name
-		WHEN fr.requester_type = 'MASTER_DISTRIBUTOR' THEN md.master_distributor_name
-	END AS requester_name
-FROM fund_requests fr
-LEFT JOIN users u 
-	ON fr.requester_type = 'USER' AND fr.requester_id = u.user_id
-LEFT JOIN distributors d 
-	ON fr.requester_type = 'DISTRIBUTOR' AND fr.requester_id = d.distributor_id
-LEFT JOIN master_distributors md 
-	ON fr.requester_type = 'MASTER_DISTRIBUTOR' AND fr.requester_id = md.master_distributor_id
-WHERE fr.requester_id = $1;
+	const query = `
+		SELECT
+			request_unique_id,
+			requester_unique_id,
+			requester_name,
+			requester_type,
+			amount,
+			bank_name,
+			account_number,
+			ifsc_code,
+			bank_branch,
+			utr_number,
+			request_status,
+			remarks
+		FROM 
+			fund_requests
+		WHERE 
+			requester_id = $1
+		ORDER BY 
+			created_at DESC;
 	`
 
-	rows, err := q.Pool.Query(context.Background(), query, requesterId)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	rows, err := q.Pool.Query(ctx, query, requesterId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var fr structures.FundRequest
+		var fr structures.GetFundRequestModel
 		if err := rows.Scan(
-			&fr.AdminId,
-			&fr.RequestId,
-			&fr.RequesterId,
-			&fr.RequesterType,
-			&fr.Amount,
-			&fr.BankName,
-			&fr.AccountNumber,
-			&fr.IFSCCode,
-			&fr.BankBranch,
-			&fr.UTRNumber,
-			&fr.Remarks,
-			&fr.RequestStatus,
-			&fr.RequesterName,
+			&fr.RequestUniqueId,   // request_unique_id
+			&fr.RequesterUniqueId, // requester_unique_id
+			&fr.RequesterName,     // requester_name
+			&fr.RequesterType,     // requester_type
+			&fr.Amount,            // amount
+			&fr.BankName,          // bank_name
+			&fr.AccountNumber,     // account_number
+			&fr.IFSCCode,          // ifsc_code
+			&fr.BankBranch,        // bank_branch
+			&fr.UTRNumber,         // utr_number
+			&fr.RequestStatus,     // request_status
+			&fr.Remarks,           // remarks
 		); err != nil {
 			return nil, err
 		}
 		fundRequests = append(fundRequests, fr)
 	}
 
-	if rows.Err() != nil {
-		return nil, rows.Err()
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return &fundRequests, nil
 }
 
-func (q *Query) GetAllFundRequests(adminId string) (*[]structures.FundRequest, error) {
-	var fundRequests []structures.FundRequest
+func (q *Query) GetAllFundRequests(adminId string) (*[]structures.GetFundRequestModel, error) {
+	var fundRequests []structures.GetFundRequestModel
 
-	query := `
-	-- By admin_id (auto-resolve requester_name from proper table)
-SELECT
-  fr.admin_id,
-  fr.request_id,
-  fr.requester_id,
-  fr.requester_type,
-  fr.amount,
-  fr.bank_name,
-  fr.account_number,
-  fr.ifsc_code,
-  fr.bank_branch,
-  fr.utr_number,
-  fr.remarks,
-  fr.request_status,
-  CASE fr.requester_type
-    WHEN 'USER' THEN (SELECT u.user_name FROM users u WHERE u.user_id = fr.requester_id)
-    WHEN 'DISTRIBUTOR' THEN (SELECT d.distributor_name FROM distributors d WHERE d.distributor_id = fr.requester_id)
-    WHEN 'MASTER_DISTRIBUTOR' THEN (SELECT md.master_distributor_name FROM master_distributors md WHERE md.master_distributor_id = fr.requester_id)
-  END AS requester_name
-FROM fund_requests fr
-WHERE fr.admin_id = $1
-ORDER BY fr.created_at DESC;
-
+	const query = `
+		SELECT
+			request_id,
+			request_unique_id,
+			requester_id,
+			requester_unique_id,
+			requester_name,
+			requester_type,
+			amount,
+			bank_name,
+			account_number,
+			ifsc_code,
+			bank_branch,
+			utr_number,
+			request_status,
+			remarks
+		FROM 
+			fund_requests
+		WHERE 
+			admin_id = $1
+		ORDER BY 
+			created_at DESC;
 	`
 
-	rows, err := q.Pool.Query(context.Background(), query, adminId)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	rows, err := q.Pool.Query(ctx, query, adminId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var fr structures.FundRequest
+		var fr structures.GetFundRequestModel
 		if err := rows.Scan(
-			&fr.AdminId,
-			&fr.RequestId,
-			&fr.RequesterId,
-			&fr.RequesterType,
-			&fr.Amount,
-			&fr.BankName,
-			&fr.AccountNumber,
-			&fr.IFSCCode,
-			&fr.BankBranch,
-			&fr.UTRNumber,
-			&fr.Remarks,
-			&fr.RequestStatus,
-			&fr.RequesterName,
+			&fr.RequestId,         // request_id
+			&fr.RequestUniqueId,   // request_unique_id
+			&fr.RequesterId,       // requester_id
+			&fr.RequesterUniqueId, // requester_unique_id
+			&fr.RequesterName,     // requester_name
+			&fr.RequesterType,     // requester_type
+			&fr.Amount,            // amount
+			&fr.BankName,          // bank_name
+			&fr.AccountNumber,     // account_number
+			&fr.IFSCCode,          // ifsc_code
+			&fr.BankBranch,        // bank_branch
+			&fr.UTRNumber,         // utr_number
+			&fr.RequestStatus,     // request_status
+			&fr.Remarks,           // remarks
 		); err != nil {
 			return nil, err
 		}
 		fundRequests = append(fundRequests, fr)
 	}
 
-	if rows.Err() != nil {
-		return nil, rows.Err()
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return &fundRequests, nil
 }
 
 func (q *Query) RejectFundRequest(requestId string) error {
-
-	query := `
-	UPDATE fund_requests
-	SET 
-		request_status = 'REJECTED',
-		updated_at = NOW()
-	WHERE request_id = $1
+	const query = `
+		UPDATE fund_requests
+		SET 
+			request_status = 'REJECTED',
+			updated_at = NOW()
+		WHERE 
+			request_id = $1
+			AND request_status = 'PENDING';
 	`
 
 	_, err := q.Pool.Exec(
@@ -156,197 +156,263 @@ func (q *Query) RejectFundRequest(requestId string) error {
 	return err
 }
 
-func (q *Query) CreateFundRequest(req *structures.FundRequest) error {
-	query := `
-	INSERT INTO fund_requests (
-		admin_id,
-		requester_id,
-		requester_type,
-		amount,
-		bank_name,
-		account_number,
-		ifsc_code,
-		bank_branch,
-		utr_number,
-		request_status,
-		remarks
-	)
-	VALUES (
-		$10,
-		$1,        -- requester_id (UUID)
-		$2,        -- requester_type ('USER' | 'DISTRIBUTOR' | 'MASTER_DISTRIBUTOR')
-		$3,        -- amount
-		$4,        -- bank_name
-		$5,        -- account_number
-		$6,        -- ifsc_code
-		$7,        -- bank_branch
-		$8,        -- utr_number
-		'PENDING', -- default status
-		$9         -- remarks
-	);
+func (q *Query) CreateFundRequest(req *structures.CreateFundRequestModel) error {
+	const query = `
+		INSERT INTO fund_requests (
+			admin_id,
+			requester_id,
+			requester_unique_id,
+			requester_name,
+			requester_type,
+			amount,
+			bank_name,
+			account_number,
+			ifsc_code,
+			bank_branch,
+			utr_number,
+			remarks,
+			request_status
+		)
+		VALUES (
+			$1,  -- admin_id
+			$2,  -- requester_id
+			$3,  -- requester_unique_id
+			$4,  -- requester_name
+			$5,  -- requester_type
+			$6,  -- amount
+			$7,  -- bank_name
+			$8,  -- account_number
+			$9,  -- ifsc_code
+			$10, -- bank_branch
+			$11, -- utr_number
+			$12, -- remarks
+			'PENDING'  -- default status for new requests
+		);
 	`
 
 	_, err := q.Pool.Exec(
 		context.Background(),
 		query,
-		req.RequesterId,
-		req.RequesterType,
-		req.Amount,
-		req.BankName,
-		req.AccountNumber,
-		req.IFSCCode,
-		req.BankBranch,
-		req.UTRNumber,
-		req.Remarks,
-		req.AdminId,
+		req.AdminID,           // $1
+		req.RequesterID,       // $2
+		req.RequesterUniqueID, // $3
+		req.RequesterName,     // $4
+		req.RequesterType,     // $5
+		req.Amount,            // $6
+		req.BankName,          // $7
+		req.AccountNumber,     // $8
+		req.IFSCCode,          // $9
+		req.BankBranch,        // $10
+		req.UTRNumber,         // $11
+		req.Remarks,           // $12
 	)
 
 	return err
 }
 
-func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequest) error {
-	const sql = `
-	WITH sel_admin AS (
-		SELECT a.admin_id, a.admin_unique_id
-		FROM admins a
-		WHERE a.admin_id = $1
-	),
-	sel_req AS (
-		SELECT fr.request_id, fr.requester_id, fr.requester_type, fr.amount, fr.remarks
-		FROM fund_requests fr
-		WHERE fr.request_id = $2
-		  AND fr.request_status = 'PENDING'
+func (q *Query) AcceptFundRequest(req *structures.AcceptFundRequestModel) error {
+	ctx := context.Background()
+
+	tx, err := q.Pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback(ctx) // safe to call; commit will clear it
+	}()
+
+	// 1) Lock and read fund_request
+	var (
+		requesterID       string
+		requesterType     string
+		requesterUniqueID string
+		requesterName     string
+		amountStr         string // numeric as text
+	)
+	err = tx.QueryRow(ctx, `
+		SELECT requester_id, requester_type, requester_unique_id, requester_name, amount
+		FROM fund_requests
+		WHERE request_id = $1 AND admin_id = $2
 		FOR UPDATE
-	),
-	sel_user AS (
-		SELECT u.user_id, u.user_unique_id
-		FROM users u
-		JOIN sel_req r ON r.requester_type = 'USER' AND u.user_id = r.requester_id
-	),
-	sel_distributor AS (
-		SELECT d.distributor_id, d.distributor_unique_id
-		FROM distributors d
-		JOIN sel_req r ON r.requester_type = 'DISTRIBUTOR' AND d.distributor_id = r.requester_id
-	),
-	sel_md AS (
-		SELECT m.master_distributor_id, m.master_distributor_unique_id
-		FROM master_distributors m
-		JOIN sel_req r ON r.requester_type = 'MASTER_DISTRIBUTOR' AND m.master_distributor_id = r.requester_id
-	),
-	deduct_admin AS (
-		UPDATE admin_wallets aw
-		SET balance = aw.balance - r.amount
-		FROM sel_admin sa, sel_req r
-		WHERE aw.admin_id = sa.admin_id
-		  AND aw.balance >= r.amount
-		RETURNING aw.admin_id
-	),
-	admin_tx AS (
-		INSERT INTO admin_wallet_transactions (
-			admin_id, amount, transaction_type, transaction_service, reference_id, remarks
-		)
-		SELECT
-			sa.admin_id,
-			r.amount,
-			'DEBIT',
-			CASE r.requester_type
-				WHEN 'USER' THEN 'USER'
-				WHEN 'DISTRIBUTOR' THEN 'DISTRIBUTOR'
-				WHEN 'MASTER_DISTRIBUTOR' THEN 'MD'
-			END,
-			COALESCE(
-				(SELECT su.user_unique_id FROM sel_user su),
-				(SELECT sd.distributor_unique_id FROM sel_distributor sd),
-				(SELECT sm.master_distributor_unique_id FROM sel_md sm)
-			),
-			r.remarks
-		FROM sel_admin sa, sel_req r
-		JOIN deduct_admin d ON TRUE
-		RETURNING 1
-	),
-	credit_user AS (
-		UPDATE user_wallets uw
-		SET balance = uw.balance + r.amount
-		FROM sel_user su, sel_req r
-		WHERE uw.user_id = su.user_id
-		RETURNING uw.user_id
-	),
-	credit_distributor AS (
-		UPDATE distributor_wallets dw
-		SET balance = dw.balance + r.amount
-		FROM sel_distributor sd, sel_req r
-		WHERE dw.distributor_id = sd.distributor_id
-		RETURNING dw.distributor_id
-	),
-	credit_md AS (
-		UPDATE master_distributor_wallets mw
-		SET balance = mw.balance + r.amount
-		FROM sel_md sm, sel_req r
-		WHERE mw.master_distributor_id = sm.master_distributor_id
-		RETURNING mw.master_distributor_id
-	),
-	user_tx AS (
-		INSERT INTO user_wallet_transactions (
-			user_id, amount, transaction_type, transaction_service, reference_id, remarks
-		)
-		SELECT
-			cu.user_id,
-			r.amount,
-			'CREDIT',
-			'ADMIN',
-			sa.admin_unique_id,
-			r.remarks
-		FROM credit_user cu, sel_admin sa, sel_req r
-		RETURNING 1
-	),
-	distributor_tx AS (
-		INSERT INTO distributor_wallet_transactions (
-			distributor_id, amount, transaction_type, transaction_service, reference_id, remarks
-		)
-		SELECT
-			cd.distributor_id,
-			r.amount,
-			'CREDIT',
-			'ADMIN',
-			sa.admin_unique_id,
-			r.remarks
-		FROM credit_distributor cd, sel_admin sa, sel_req r
-		RETURNING 1
-	),
-	md_tx AS (
-		INSERT INTO master_distributor_wallet_transactions (
-			master_distributor_id, amount, transaction_type, transaction_service, reference_id, remarks
-		)
-		SELECT
-			cm.master_distributor_id,
-			r.amount,
-			'CREDIT',
-			'ADMIN',
-			sa.admin_unique_id,
-			r.remarks
-		FROM credit_md cm, sel_admin sa, sel_req r
-		RETURNING 1
-	),
-	upd_fund_req AS (
-		UPDATE fund_requests fr
-		SET request_status = 'APPROVED',
-			updated_at = NOW()
-		FROM sel_req r
-		WHERE fr.request_id = r.request_id
-		  AND EXISTS (SELECT 1 FROM deduct_admin)
-		RETURNING 1
-	)
-	SELECT 1;
-	`
+	`, req.RequestID, req.AdminID).Scan(&requesterID, &requesterType, &requesterUniqueID, &requesterName, &amountStr)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return fmt.Errorf("fund request not found for given request_id and admin_id")
+		}
+		return fmt.Errorf("select fund_request: %w", err)
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+	// 2) Lock admin row and check balance
+	var adminBalanceStr string
+	var adminName string
+	err = tx.QueryRow(ctx, `
+		SELECT admin_wallet_balance::text, admin_name
+		FROM admins
+		WHERE admin_id = $1
+		FOR UPDATE
+	`, req.AdminID).Scan(&adminBalanceStr, &adminName)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return fmt.Errorf("admin not found")
+		}
+		return fmt.Errorf("select admin: %w", err)
+	}
 
-	_, err := q.Pool.Exec(
-		ctx,
-		sql,
-		req.AdminId,
-		req.RequestId,
-	)
-	return err
+	// 3) Compare balances (use numeric comparison in SQL to avoid float issues)
+	//    We'll run an SQL check that admin_balance >= amount. If not, return error.
+	var sufficient bool
+	err = tx.QueryRow(ctx, `
+		SELECT (admin_wallet_balance >= $1::numeric) 
+		FROM admins WHERE admin_id = $2
+	`, amountStr, req.AdminID).Scan(&sufficient)
+	if err != nil {
+		return fmt.Errorf("check admin balance: %w", err)
+	}
+	if !sufficient {
+		return fmt.Errorf("admin has insufficient wallet balance")
+	}
+
+	// 4) Lock requester row and read balance (and name if needed) for update
+	var requesterBalanceStr string
+	switch requesterType {
+	case "USER":
+		err = tx.QueryRow(ctx, `
+			SELECT user_wallet_balance::text
+			FROM users
+			WHERE user_id = $1
+			FOR UPDATE
+		`, requesterID).Scan(&requesterBalanceStr)
+	case "DISTRIBUTOR":
+		err = tx.QueryRow(ctx, `
+			SELECT distributor_wallet_balance::text
+			FROM distributors
+			WHERE distributor_id = $1
+			FOR UPDATE
+		`, requesterID).Scan(&requesterBalanceStr)
+	case "MASTER_DISTRIBUTOR":
+		err = tx.QueryRow(ctx, `
+			SELECT master_distributor_wallet_balance::text
+			FROM master_distributors
+			WHERE master_distributor_id = $1
+			FOR UPDATE
+		`, requesterID).Scan(&requesterBalanceStr)
+	default:
+		return fmt.Errorf("unknown requester_type: %s", requesterType)
+	}
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return fmt.Errorf("requester not found")
+		}
+		return fmt.Errorf("select requester wallet: %w", err)
+	}
+
+	// 5) Perform wallet updates and mark request approved
+	// Update admin wallet: subtract amount
+	_, err = tx.Exec(ctx, `
+		UPDATE admins
+		SET admin_wallet_balance = admin_wallet_balance - $1::numeric,
+		    updated_at = NOW()
+		WHERE admin_id = $2
+	`, amountStr, req.AdminID)
+	if err != nil {
+		return fmt.Errorf("update admin wallet: %w", err)
+	}
+
+	// Update requester wallet: add amount
+	switch requesterType {
+	case "USER":
+		_, err = tx.Exec(ctx, `
+			UPDATE users
+			SET user_wallet_balance = user_wallet_balance + $1::numeric,
+			    updated_at = NOW()
+			WHERE user_id = $2
+		`, amountStr, requesterID)
+	case "DISTRIBUTOR":
+		_, err = tx.Exec(ctx, `
+			UPDATE distributors
+			SET distributor_wallet_balance = distributor_wallet_balance + $1::numeric,
+			    updated_at = NOW()
+			WHERE distributor_id = $2
+		`, amountStr, requesterID)
+	case "MASTER_DISTRIBUTOR":
+		_, err = tx.Exec(ctx, `
+			UPDATE master_distributors
+			SET master_distributor_wallet_balance = master_distributor_wallet_balance + $1::numeric,
+			    updated_at = NOW()
+			WHERE master_distributor_id = $2
+		`, amountStr, requesterID)
+	}
+	if err != nil {
+		return fmt.Errorf("update requester wallet: %w", err)
+	}
+
+	// 6) Mark fund_request as APPROVED
+	_, err = tx.Exec(ctx, `
+		UPDATE fund_requests
+		SET request_status = 'APPROVED', updated_at = NOW()
+		WHERE request_id = $1
+	`, req.RequestID)
+	if err != nil {
+		return fmt.Errorf("update fund_request status: %w", err)
+	}
+
+	// 7) Insert two transactions (admin debit, requester credit)
+	// Use request_id as transaction_id (so both relate to same originating request).
+	// transaction_type: admin -> DEBIT, requester -> CREDIT
+	_, err = tx.Exec(ctx, `
+		INSERT INTO transactions (
+			transaction_id,
+			transactor_id,
+			receiver_id,
+			transactor_name,
+			receiver_name,
+			transactor_type,
+			receiver_type,
+			transaction_type,
+			transaction_service,
+			amount,
+			transaction_status,
+			remarks,
+			created_at
+		) VALUES (
+			$1::uuid,         -- transaction_id (request_id)
+			$2::uuid,         -- transactor_id (admin)
+			$3::uuid,         -- receiver_id (requester)
+			$4,               -- transactor_name (admin_name)
+			$5,               -- receiver_name (requester_name)
+			'ADMIN',          -- transactor_type
+			$6,               -- receiver_type (USER/DISTRIBUTOR/MASTER_DISTRIBUTOR)
+			'DEBIT',          -- transaction_type
+			'FUND_REQUEST',   -- transaction_service
+			$7::numeric,      -- amount
+			'SUCCESS',        -- transaction_status
+			'Fund request approved - admin debit',
+			NOW()
+		),
+		(
+			$1::uuid,         -- same transaction_id to correlate
+			$3::uuid,         -- transactor_id (requester)
+			$2::uuid,         -- receiver_id (admin)
+			$5,               -- transactor_name (requester_name)
+			$4,               -- receiver_name (admin_name)
+			$6,               -- transactor_type (USER/DISTRIBUTOR/MASTER_DISTRIBUTOR)
+			'ADMIN',          -- receiver_type
+			'CREDIT',         -- transaction_type
+			'FUND_REQUEST',
+			$7::numeric,
+			'SUCCESS',
+			'Fund request approved - requester credit',
+			NOW()
+		)
+	`, req.RequestID, req.AdminID, requesterID, adminName, requesterName, requesterType, amountStr)
+	if err != nil {
+		return fmt.Errorf("insert transactions: %w", err)
+	}
+
+	// 8) Commit
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+
+	return nil
 }

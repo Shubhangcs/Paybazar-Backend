@@ -12,12 +12,14 @@ import (
 func (q *Query) CheckUserBalance(userId string, amount string) (bool, error) {
 	var hasBalance bool
 	query := `SELECT 
-  CASE 
-    WHEN balance >= $2::numeric THEN TRUE 
-    ELSE FALSE 
-  END AS has_sufficient_balance
-FROM user_wallets
-WHERE user_id = $1;
+    CASE 
+        WHEN user_wallet_balance >= $2::numeric THEN TRUE
+        ELSE FALSE
+    END AS has_sufficient_balance
+FROM 
+    users
+WHERE 
+    user_id = $1;
 `
 	err := q.Pool.QueryRow(context.Background(), query, userId, amount).Scan(&hasBalance)
 	return hasBalance, err
@@ -27,13 +29,16 @@ func (q *Query) CheckPayoutLimit(userId string, amount string) (bool, error) {
 	var hasPayoutLimit bool
 	query := `
 	SELECT 
-  CASE 
-    WHEN COALESCE(SUM(amount), 0) + $2::numeric > 25000 THEN FALSE
-    ELSE TRUE
-  END AS can_transact
-FROM payout_service
-WHERE user_id = $1
-  AND DATE(created_at) = CURRENT_DATE;
+    CASE 
+        WHEN COALESCE(SUM(amount), 0) + $2::numeric <= 25000 THEN TRUE 
+        ELSE FALSE 
+    END AS within_limit
+FROM 
+    payout_service
+WHERE 
+    user_id = $1
+    AND transaction_status = 'SUCCESS'
+    AND created_at::date = CURRENT_DATE;
 `
 	err := q.Pool.QueryRow(context.Background(), query, userId, amount).Scan(&hasPayoutLimit)
 	return hasPayoutLimit, err

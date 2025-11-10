@@ -11,7 +11,7 @@ import (
 
 func (q *Query) GetAdminWalletBalance(adminId string) (string, error) {
 	var balance string
-	query := `SELECT balance FROM admin_wallets WHERE admin_id=$1`
+	query := `SELECT admin_wallet_balance FROM admins WHERE admin_id=$1`
 	err := q.Pool.QueryRow(context.Background(), query, adminId).Scan(&balance)
 	return balance, err
 }
@@ -290,4 +290,20 @@ func (q *Query) GetUserWalletTransactions(userId string) (*[]structures.UserWall
 
 	return &transactions, nil
 }
+
+/*
+	Transaction ID
+	Transactor ID
+	Reciver ID
+	Transactor Name
+	Reciver Name
+	Transactor Type
+	Reciver Type
+	Transaction Type CREDIT, DEBIT
+	Transaction Service FUND_REQUEST, TOPUP, PAYOUT, COMMISSION
+	Amount 
+	Transaction Status
+	Remarks
+
+*/
 
