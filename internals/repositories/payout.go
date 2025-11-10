@@ -34,14 +34,14 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 		return "", fmt.Errorf("invalid request data: %w", err)
 	}
 
-	_, err := strconv.ParseFloat(req.Amount , 64)
+	amt, err := strconv.ParseFloat(req.Amount , 64)
 	if err != nil {
 		return "" , fmt.Errorf("failed to parse amount: %w", err)
 	}
 
-	// if amt < 1000 {
-	// 	return "" , fmt.Errorf("failed to execuite minimum transaction is 1000")
-	// }
+	if amt < 1000 {
+		return "" , fmt.Errorf("failed to execuite minimum transaction is 1000")
+	}
 
 	// Check User Balance
 	hasBalance, err := pr.query.CheckUserBalance(req.UserID, req.Amount)
