@@ -78,31 +78,26 @@ func (q *Query) GetAllFundRequests(adminId string) (*[]structures.FundRequest, e
 	var fundRequests []structures.FundRequest
 
 	query := `
-	SELECT 
-	fr.admin_id,
-	fr.request_id,
-	fr.requester_id,
-	fr.requester_type,
-	fr.amount,
-	fr.bank_name,
-	fr.account_number,
-	fr.ifsc_code,
-	fr.bank_branch,
-	fr.utr_number,
-	fr.remarks,
-	fr.request_status,
-	CASE 
-		WHEN fr.requester_type = 'USER' THEN u.user_name
-		WHEN fr.requester_type = 'DISTRIBUTOR' THEN d.distributor_name
-		WHEN fr.requester_type = 'MASTER_DISTRIBUTOR' THEN md.master_distributor_name
-	END AS requester_name
+	-- By admin_id (auto-resolve requester_name from proper table)
+SELECT
+  fr.admin_id,
+  fr.request_id,
+  fr.requester_id,
+  fr.requester_type,
+  fr.amount,
+  fr.bank_name,
+  fr.account_number,
+  fr.ifsc_code,
+  fr.bank_branch,
+  fr.utr_number,
+  fr.remarks,
+  fr.request_status,
+  CASE fr.requester_type
+    WHEN 'USER' THEN (SELECT u.user_name FROM users u WHERE u.user_id = fr.requester_id)
+    WHEN 'DISTRIBUTOR' THEN (SELECT d.distributor_name FROM distributors d WHERE d.distributor_id = fr.requester_id)
+    WHEN 'MASTER_DISTRIBUTOR' THEN (SELECT md.master_distributor_name FROM master_distributors md WHERE md.master_distributor_id = fr.requester_id)
+  END AS requester_name
 FROM fund_requests fr
-LEFT JOIN users u 
-	ON fr.requester_type = 'USER' AND fr.requester_id = u.user_id
-LEFT JOIN distributors d 
-	ON fr.requester_type = 'DISTRIBUTOR' AND fr.requester_id = d.distributor_id
-LEFT JOIN master_distributors md 
-	ON fr.requester_type = 'MASTER_DISTRIBUTOR' AND fr.requester_id = md.master_distributor_id
 WHERE fr.admin_id = $1
 ORDER BY fr.created_at DESC;
 
