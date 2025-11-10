@@ -31,7 +31,7 @@ func (q *Query) AdminWalletTopup(req *structures.AdminWalletTopupRequest) error 
 		transaction_service,
 		amount,
 		transaction_status,
-		remarks,
+		remarks
 	) VALUES(
 		$1,
 		$1,
