@@ -44,3 +44,33 @@ type Distributor struct {
 	DistributorPassword string `json:"distributor_password"`
 	DistributorPhone    string `json:"distributor_phone"`
 }
+
+type MasterDistributorGetResponse struct {
+	MasterDistributorUniqueID      string `json:"master_distributor_unique_id"`
+	MasterDistributorName          string `json:"master_distributor_name"`
+	MasterDistributorEmail         string `json:"master_distributor_email"`
+	MasterDistributorPhone         string `json:"master_distributor_phone"`
+	MasterDistributorWalletBalance string `json:"master_distributor_wallet_balance"`
+}
+
+type DistributorGetResponse struct {
+	DistributorUniqueID      string `json:"distributor_unique_id"`
+	DistributorName          string `json:"distributor_name"`
+	DistributorEmail         string `json:"distributor_email"`
+	DistributorPhone         string `json:"distributor_phone"`
+	DistributorWalletBalance string `json:"distributor_wallet_balance"`
+}
+
+type UserGetResponse struct {
+	UserUniqueID      string `json:"user_unique_id"`
+	UserName          string `json:"user_name"`
+	UserEmail         string `json:"user_email"`
+	UserPhone         string `json:"user_phone"`
+	UserWalletBalance string `json:"user_wallet_balance"`
+}
+
+type CommonResponse struct {
+	Message string      `json:"msg"`
+	Status  string      `json:"status"`
+	Data    interface{} `json:"data,omitempty"`
+}
