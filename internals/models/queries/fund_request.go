@@ -79,20 +79,33 @@ func (q *Query) GetAllFundRequests(adminId string) (*[]structures.FundRequest, e
 
 	query := `
 	SELECT 
-		admin_id,
-		request_id,
-		requester_id,
-		requester_type,
-		amount,
-		bank_name,
-		account_number,
-		ifsc_code,
-		bank_branch,
-		utr_number,
-		remarks,
-		request_status
-	FROM fund_requests
-	WHERE admin_id=$1;
+	fr.admin_id,
+	fr.request_id,
+	fr.requester_id,
+	fr.requester_type,
+	fr.amount,
+	fr.bank_name,
+	fr.account_number,
+	fr.ifsc_code,
+	fr.bank_branch,
+	fr.utr_number,
+	fr.remarks,
+	fr.request_status,
+	CASE 
+		WHEN fr.requester_type = 'USER' THEN u.user_name
+		WHEN fr.requester_type = 'DISTRIBUTOR' THEN d.distributor_name
+		WHEN fr.requester_type = 'MASTER_DISTRIBUTOR' THEN md.master_distributor_name
+	END AS requester_name
+FROM fund_requests fr
+LEFT JOIN users u 
+	ON fr.requester_type = 'USER' AND fr.requester_id = u.user_id
+LEFT JOIN distributors d 
+	ON fr.requester_type = 'DISTRIBUTOR' AND fr.requester_id = d.distributor_id
+LEFT JOIN master_distributors md 
+	ON fr.requester_type = 'MASTER_DISTRIBUTOR' AND fr.requester_id = md.master_distributor_id
+WHERE fr.admin_id = $1
+ORDER BY fr.created_at DESC;
+
 	`
 
 	rows, err := q.Pool.Query(context.Background(), query, adminId)
@@ -116,6 +129,7 @@ func (q *Query) GetAllFundRequests(adminId string) (*[]structures.FundRequest, e
 			&fr.UTRNumber,
 			&fr.Remarks,
 			&fr.RequestStatus,
+			&fr.RequesterName,
 		); err != nil {
 			return nil, err
 		}
