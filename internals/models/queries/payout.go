@@ -2,7 +2,7 @@ package queries
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/structures"
@@ -61,7 +61,7 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 	)
 	VALUES ($1,$2,$3,$4,$5,$6,$7,UPPER($8),'PENDING',$9,$10)
 	RETURNING 
-		transaction_id::TEXT,
+		payout_transaction_id::TEXT,
 		mobile_number AS mobile_no,
 		account_number AS account_no,
 		ifsc_code AS ifsc,
@@ -105,221 +105,447 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 	return &res, err
 }
 
-var ErrPayoutSuccessNotApplied = errors.New("payout success not applied (missing/invalid transaction or zero rows affected)")
-
 func (q *Query) PayoutSuccess(req *structures.PayoutApiSuccessResponse) error {
-	const sql = `
-WITH sel AS (
-  SELECT 
-    p.transaction_id,
-    p.user_id,
-    p.amount::numeric AS amt,
-    p.commision::numeric AS commission
-  FROM payout_service p
-  WHERE p.transaction_id = $1
-  FOR UPDATE
-),
--- update payout with operator_transaction_id and order_id and mark SUCCESS
-upd_payout AS (
-  UPDATE payout_service p
-  SET operator_transaction_id = $2,
-      order_id               = $3,
-      transaction_status     = 'SUCCESS',
-      updated_at             = NOW()
-  FROM sel s
-  WHERE p.transaction_id = s.transaction_id
-  RETURNING 1
-),
-u AS (
-  SELECT
-    s.transaction_id,
-    s.user_id,
-    s.amt,
-    s.commission,
-    usr.user_unique_id,
-    usr.admin_id,
-    usr.master_distributor_id,
-    usr.distributor_id
-  FROM sel s
-  JOIN users usr ON usr.user_id = s.user_id
-),
-splits AS (
-  SELECT
-    u.*,
-    ROUND(u.commission * 0.50, 2) AS user_share,
-    ROUND(u.commission * 0.20, 2) AS distributor_share,
-    ROUND(u.commission * 0.05, 2) AS md_share,
-    (u.commission - (ROUND(u.commission * 0.50, 2)
-                   + ROUND(u.commission * 0.20, 2)
-                   + ROUND(u.commission * 0.05, 2))) AS admin_share
-  FROM u
-),
+	ctx := context.Background()
 
--- 1) Deduct payout amount from USER wallet
-user_deduct AS (
-  UPDATE user_wallets uw
-  SET balance = uw.balance - s.amt
-  FROM splits s
-  WHERE uw.user_id = s.user_id
-  RETURNING 1
-),
--- User DEBIT tx for payout amount
-user_debit_tx AS (
-  INSERT INTO user_wallet_transactions (
-    user_id, amount, transaction_type, transaction_service, reference_id, remarks
-  )
-  SELECT
-    s.user_id,
-    s.amt,
-    'DEBIT',
-    'PAYOUT',
-    s.user_unique_id,
-    'SUCCESS'
-  FROM splits s
-  RETURNING 1
-),
-
--- 2) Credit USER with 50% commission
-user_comm_credit AS (
-  UPDATE user_wallets uw
-  SET balance = uw.balance + s.user_share
-  FROM splits s
-  WHERE uw.user_id = s.user_id
-  RETURNING 1
-),
-user_comm_tx AS (
-  INSERT INTO user_wallet_transactions (
-    user_id, amount, transaction_type, transaction_service, reference_id, remarks
-  )
-  SELECT
-    s.user_id,
-    s.user_share,
-    'CREDIT',
-    'PAYOUT',
-    s.user_unique_id,
-    'COMMISSION'
-  FROM splits s
-  RETURNING 1
-),
-
--- 3) Credit ADMIN share
-adm_upd AS (
-  UPDATE admin_wallets aw
-  SET balance = aw.balance + s.admin_share
-  FROM splits s
-  WHERE aw.admin_id = s.admin_id
-  RETURNING 1
-),
-adm_tx AS (
-  INSERT INTO admin_wallet_transactions (
-    admin_id, amount, transaction_type, transaction_service, reference_id, remarks
-  )
-  SELECT
-    s.admin_id,
-    s.admin_share,
-    'CREDIT',
-    'PAYOUT',
-    s.user_unique_id,
-    'COMMISSION'
-  FROM splits s
-  RETURNING 1
-),
-
--- 4) Credit MASTER DISTRIBUTOR share
-md_upd AS (
-  UPDATE master_distributor_wallets mw
-  SET balance = mw.balance + s.md_share
-  FROM splits s
-  WHERE mw.master_distributor_id = s.master_distributor_id
-  RETURNING 1
-),
-md_tx AS (
-  INSERT INTO master_distributor_wallet_transactions (
-    master_distributor_id, amount, transaction_type, transaction_service, reference_id, remarks
-  )
-  SELECT
-    s.master_distributor_id,
-    s.md_share,
-    'CREDIT',
-    'PAYOUT',
-    s.user_unique_id,
-    'COMMISSION'
-  FROM splits s
-  RETURNING 1
-),
-
--- 5) Credit DISTRIBUTOR share
-dist_upd AS (
-  UPDATE distributor_wallets dw
-  SET balance = dw.balance + s.distributor_share
-  FROM splits s
-  WHERE dw.distributor_id = s.distributor_id
-  RETURNING 1
-),
-dist_tx AS (
-  INSERT INTO distributor_wallet_transactions (
-    distributor_id, amount, transaction_type, transaction_service, reference_id, remarks
-  )
-  SELECT
-    s.distributor_id,
-    s.distributor_share,
-    'CREDIT',
-    'PAYOUT',
-    s.user_unique_id,
-    'COMMISSION'
-  FROM splits s
-  RETURNING 1
-)
-
--- If ANY of the above CTEs returns 0 rows, this JOIN chain produces no row -> ErrNoRows
-SELECT 1
-FROM sel
-JOIN upd_payout           ON TRUE
-JOIN user_deduct          ON TRUE
-JOIN user_debit_tx        ON TRUE
-JOIN user_comm_credit     ON TRUE
-JOIN user_comm_tx         ON TRUE
-JOIN adm_upd              ON TRUE
-JOIN adm_tx               ON TRUE
-JOIN md_upd               ON TRUE
-JOIN md_tx                ON TRUE
-JOIN dist_upd             ON TRUE
-JOIN dist_tx              ON TRUE;
-`
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
-	var ok int
-	err := q.Pool.QueryRow(
-		ctx,
-		sql,
-		req.PartnerRequestID,      // $1 transaction_id
-		req.OperatorTransactionID, // $2
-		req.OrderID,               // $3
-	).Scan(&ok)
-
+	tx, err := q.Pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrPayoutSuccessNotApplied
-		}
-		return err
+		return fmt.Errorf("begin tx: %w", err)
 	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	// 1) Lock payout_service row and read required fields (only if PENDING)
+	var (
+		userID        string
+		amountStr     string
+		commissionStr string
+		currentStatus string
+	)
+	err = tx.QueryRow(ctx, `
+		SELECT user_id, amount::text, commision::text, transaction_status
+		FROM payout_service
+		WHERE payout_transaction_id = $1
+		FOR UPDATE
+	`, req.PartnerRequestID).Scan(&userID, &amountStr, &commissionStr, &currentStatus)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return fmt.Errorf("payout not found")
+		}
+		return fmt.Errorf("select payout_service: %w", err)
+	}
+
+	if currentStatus != "PENDING" {
+		return fmt.Errorf("payout is not pending (status=%s)", currentStatus)
+	}
+
+	// 2) Lock user row and get wallet, name, and hierarchy ids
+	var (
+		userBalanceStr      string
+		userName            string
+		distributorID       *string
+		masterDistributorID *string
+		adminID             *string
+	)
+	err = tx.QueryRow(ctx, `
+		SELECT user_wallet_balance::text, user_name, distributor_id, master_distributor_id, admin_id
+		FROM users
+		WHERE user_id = $1
+		FOR UPDATE
+	`, userID).Scan(&userBalanceStr, &userName, &distributorID, &masterDistributorID, &adminID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return fmt.Errorf("user not found")
+		}
+		return fmt.Errorf("select user: %w", err)
+	}
+
+	// 3) Ensure user has sufficient balance for the payout amount
+	var sufficient bool
+	err = tx.QueryRow(ctx, `
+		SELECT (user_wallet_balance >= $1::numeric)
+		FROM users
+		WHERE user_id = $2
+	`, amountStr, userID).Scan(&sufficient)
+	if err != nil {
+		return fmt.Errorf("check user balance: %w", err)
+	}
+	if !sufficient {
+		return fmt.Errorf("user has insufficient wallet balance")
+	}
+
+	// 4) Deduct amount from user wallet
+	_, err = tx.Exec(ctx, `
+		UPDATE users
+		SET user_wallet_balance = user_wallet_balance - $1::numeric,
+		    updated_at = NOW()
+		WHERE user_id = $2
+	`, amountStr, userID)
+	if err != nil {
+		return fmt.Errorf("deduct user wallet: %w", err)
+	}
+
+	// 5) Insert payout debit transaction (transactor and receiver both user; receiver_name = 'Payout')
+	_, err = tx.Exec(ctx, `
+		INSERT INTO transactions (
+			transaction_id,
+			transactor_id,
+			receiver_id,
+			transactor_name,
+			receiver_name,
+			transactor_type,
+			receiver_type,
+			transaction_type,
+			transaction_service,
+			amount,
+			transaction_status,
+			remarks,
+			created_at
+		) VALUES (
+			gen_random_uuid(),
+			$1::uuid,
+			$1::uuid,
+			$2,
+			'Payout',
+			'USER',
+			'USER',
+			'DEBIT',
+			'PAYOUT',
+			$3::numeric,
+			'SUCCESS',
+			('Payout processed | payout_id=' || $4::text),
+			NOW()
+		)
+	`, userID, userName, amountStr, req.PartnerRequestID)
+	if err != nil {
+		return fmt.Errorf("insert payout transaction: %w", err)
+	}
+
+	// 6) Calculate commission shares and credit them
+	//    admin: 25%, distributor: 20%, master distributor: 5%, retailer(user): 50%
+
+	// a) Admin share (if admin_id not null)
+	if adminID != nil && *adminID != "" {
+		// credit admin wallet
+		_, err = tx.Exec(ctx, `
+			WITH share AS (SELECT ($1::numeric * 0.25)::numeric AS amt)
+			UPDATE admins
+			SET admin_wallet_balance = admin_wallet_balance + (SELECT amt FROM share),
+			    updated_at = NOW()
+			WHERE admin_id = $2
+		`, commissionStr, *adminID)
+		if err != nil {
+			return fmt.Errorf("credit admin commission: %w", err)
+		}
+
+		// fetch admin name (for transaction row)
+		var adminName string
+		err = tx.QueryRow(ctx, `SELECT admin_name FROM admins WHERE admin_id = $1`, *adminID).Scan(&adminName)
+		if err != nil {
+			return fmt.Errorf("fetch admin name: %w", err)
+		}
+
+		// insert admin commission transaction
+		_, err = tx.Exec(ctx, `
+			INSERT INTO transactions (
+				transaction_id,
+				transactor_id,
+				receiver_id,
+				transactor_name,
+				receiver_name,
+				transactor_type,
+				receiver_type,
+				transaction_type,
+				transaction_service,
+				amount,
+				transaction_status,
+				remarks,
+				created_at
+			) VALUES (
+				gen_random_uuid(),
+				$1::uuid,
+				$1::uuid,
+				$2,
+				$2,
+				'ADMIN',
+				'ADMIN',
+				'CREDIT',
+				'PAYOUT',
+				($3::numeric * 0.25)::numeric,
+				'SUCCESS',
+				('Payout commission credited to admin | payout_id=' || $4::text),
+				NOW()
+			)
+		`, *adminID, adminName, commissionStr, req.PartnerRequestID)
+		if err != nil {
+			return fmt.Errorf("insert admin commission transaction: %w", err)
+		}
+	}
+
+	// b) Distributor share (if distributor exists)
+	if distributorID != nil && *distributorID != "" {
+		_, err = tx.Exec(ctx, `
+			WITH share AS (SELECT ($1::numeric * 0.20)::numeric AS amt)
+			UPDATE distributors
+			SET distributor_wallet_balance = distributor_wallet_balance + (SELECT amt FROM share),
+			    updated_at = NOW()
+			WHERE distributor_id = $2
+		`, commissionStr, *distributorID)
+		if err != nil {
+			return fmt.Errorf("credit distributor commission: %w", err)
+		}
+
+		var distName string
+		err = tx.QueryRow(ctx, `SELECT distributor_name FROM distributors WHERE distributor_id = $1`, *distributorID).Scan(&distName)
+		if err != nil {
+			return fmt.Errorf("fetch distributor name: %w", err)
+		}
+		_, err = tx.Exec(ctx, `
+			INSERT INTO transactions (
+				transaction_id,
+				transactor_id,
+				receiver_id,
+				transactor_name,
+				receiver_name,
+				transactor_type,
+				receiver_type,
+				transaction_type,
+				transaction_service,
+				amount,
+				transaction_status,
+				remarks,
+				created_at
+			) VALUES (
+				gen_random_uuid(),
+				$1::uuid,
+				$1::uuid,
+				$2,
+				$2,
+				'DISTRIBUTOR',
+				'DISTRIBUTOR',
+				'CREDIT',
+				'PAYOUT',
+				($3::numeric * 0.20)::numeric,
+				'SUCCESS',
+				('Payout commission credited to distributor | payout_id=' || $4::text),
+				NOW()
+			)
+		`, *distributorID, distName, commissionStr, req.PartnerRequestID)
+		if err != nil {
+			return fmt.Errorf("insert distributor commission transaction: %w", err)
+		}
+	}
+
+	// c) Master distributor share (if exists)
+	if masterDistributorID != nil && *masterDistributorID != "" {
+		_, err = tx.Exec(ctx, `
+			WITH share AS (SELECT ($1::numeric * 0.05)::numeric AS amt)
+			UPDATE master_distributors
+			SET master_distributor_wallet_balance = master_distributor_wallet_balance + (SELECT amt FROM share),
+			    updated_at = NOW()
+			WHERE master_distributor_id = $2
+		`, commissionStr, *masterDistributorID)
+		if err != nil {
+			return fmt.Errorf("credit master distributor commission: %w", err)
+		}
+
+		var mdName string
+		err = tx.QueryRow(ctx, `SELECT master_distributor_name FROM master_distributors WHERE master_distributor_id = $1`, *masterDistributorID).Scan(&mdName)
+		if err != nil {
+			return fmt.Errorf("fetch master distributor name: %w", err)
+		}
+		_, err = tx.Exec(ctx, `
+			INSERT INTO transactions (
+				transaction_id,
+				transactor_id,
+				receiver_id,
+				transactor_name,
+				receiver_name,
+				transactor_type,
+				receiver_type,
+				transaction_type,
+				transaction_service,
+				amount,
+				transaction_status,
+				remarks,
+				created_at
+			) VALUES (
+				gen_random_uuid(),
+				$1::uuid,
+				$1::uuid,
+				$2,
+				$2,
+				'MASTER_DISTRIBUTOR',
+				'MASTER_DISTRIBUTOR',
+				'CREDIT',
+				'PAYOUT',
+				($3::numeric * 0.05)::numeric,
+				'SUCCESS',
+				('Payout commission credited to master distributor | payout_id=' || $4::text),
+				NOW()
+			)
+		`, *masterDistributorID, mdName, commissionStr, req.PartnerRequestID)
+		if err != nil {
+			return fmt.Errorf("insert master distributor commission transaction: %w", err)
+		}
+	}
+
+	// d) Retailer (user) share (50%) — credit back to user
+	_, err = tx.Exec(ctx, `
+		WITH share AS (SELECT ($1::numeric * 0.50)::numeric AS amt)
+		UPDATE users
+		SET user_wallet_balance = user_wallet_balance + (SELECT amt FROM share),
+		    updated_at = NOW()
+		WHERE user_id = $2
+	`, commissionStr, userID)
+	if err != nil {
+		return fmt.Errorf("credit retailer commission: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO transactions (
+			transaction_id,
+			transactor_id,
+			receiver_id,
+			transactor_name,
+			receiver_name,
+			transactor_type,
+			receiver_type,
+			transaction_type,
+			transaction_service,
+			amount,
+			transaction_status,
+			remarks,
+			created_at
+		) VALUES (
+			gen_random_uuid(),
+			$1::uuid,
+			$1::uuid,
+			$2,
+			$2,
+			'USER',
+			'USER',
+			'CREDIT',
+			'PAYOUT',
+			($3::numeric * 0.50)::numeric,
+			'SUCCESS',
+			('Payout commission credited to retailer (user) | payout_id=' || $4::text),
+			NOW()
+		)
+	`, userID, userName, commissionStr, req.PartnerRequestID)
+	if err != nil {
+		return fmt.Errorf("insert retailer commission transaction: %w", err)
+	}
+
+	// 7) Finally update payout_service to SUCCESS and set operator_transaction_id, order_id
+	_, err = tx.Exec(ctx, `
+		UPDATE payout_service
+		SET transaction_status = 'SUCCESS',
+		    operator_transaction_id = $2,
+		    order_id = $3,
+		    updated_at = NOW()
+		WHERE payout_transaction_id = $1
+	`, req.PartnerRequestID, req.OperatorTransactionID, req.OrderID)
+	if err != nil {
+		return fmt.Errorf("update payout_service status: %w", err)
+	}
+
+	// 8) Commit
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+
 	return nil
 }
 
-func (q *Query) PayoutFailure(transactionId string) error {
-	const query = `
+func (q *Query) PayoutFailure(req *structures.PayoutApiFailureResponse) error {
+	ctx := context.Background()
+
+	tx, err := q.Pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	// 1) Lock payout_service row and read required fields (only if PENDING)
+	var (
+		userID       string
+		amountStr    string
+		currentStatus string
+	)
+	err = tx.QueryRow(ctx, `
+		SELECT user_id, amount::text, transaction_status
+		FROM payout_service
+		WHERE payout_transaction_id = $1
+		FOR UPDATE
+	`, req.PayoutTransactionID).Scan(&userID, &amountStr, &currentStatus)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return fmt.Errorf("payout not found")
+		}
+		return fmt.Errorf("select payout_service: %w", err)
+	}
+
+	if currentStatus != "PENDING" {
+		return fmt.Errorf("payout is not pending (status=%s)", currentStatus)
+	}
+
+	// 2) Update payout_service to FAILED and set operator_transaction_id, order_id, remarks
+	_, err = tx.Exec(ctx, `
 		UPDATE payout_service
-		SET 
-			transaction_status = 'FAILED',
-			updated_at = NOW()
-		WHERE transaction_id = $1
-		  AND transaction_status = 'PENDING';
-	`
+		SET transaction_status = 'FAILED',
+		    operator_transaction_id = $2,
+		    order_id = $3,
+		    remarks = $4,
+		    updated_at = NOW()
+		WHERE payout_transaction_id = $1
+	`, req.PayoutTransactionID, "INVALID", "INVALID", "INVALID")
+	if err != nil {
+		return fmt.Errorf("update payout_service to FAILED: %w", err)
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	// 3) Insert a failed transaction record for audit (transactor & receiver are user)
+	//    receiver_name set to 'Payout' to indicate payout service
+	//    We record the attempted amount and include provider remarks in transaction remarks.
+	_, err = tx.Exec(ctx, `
+		INSERT INTO transactions (
+			transaction_id,
+			transactor_id,
+			receiver_id,
+			transactor_name,
+			receiver_name,
+			transactor_type,
+			receiver_type,
+			transaction_type,
+			transaction_service,
+			amount,
+			transaction_status,
+			remarks,
+			created_at
+		) VALUES (
+			gen_random_uuid(),
+			$1::uuid,
+			$1::uuid,
+			(SELECT user_name FROM users WHERE user_id = $1),
+			'Payout',
+			'USER',
+			'USER',
+			'DEBIT',
+			'PAYOUT',
+			$2::numeric,
+			'FAILED',
+			('Payout failed | payout_id=' || $3::text || ' | provider_remarks=' || COALESCE($4, '') ),
+			NOW()
+		)
+	`, userID, amountStr, req.PayoutTransactionID, "INVALID")
+	if err != nil {
+		return fmt.Errorf("insert failed payout transaction: %w", err)
+	}
 
-	_, err := q.Pool.Exec(ctx, query, transactionId)
-	return err
+	// 4) Commit
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+
+	return nil
 }
+

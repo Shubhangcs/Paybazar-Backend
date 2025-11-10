@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/queries"
@@ -32,6 +33,15 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 	if err := e.Validate(req); err != nil {
 		return "", fmt.Errorf("invalid request data: %w", err)
 	}
+
+	_, err := strconv.ParseFloat(req.Amount , 64)
+	if err != nil {
+		return "" , fmt.Errorf("failed to parse amount: %w", err)
+	}
+
+	// if amt < 1000 {
+	// 	return "" , fmt.Errorf("failed to execuite minimum transaction is 1000")
+	// }
 
 	// Check User Balance
 	hasBalance, err := pr.query.CheckUserBalance(req.UserID, req.Amount)
@@ -116,7 +126,8 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 		if err := json.Unmarshal(respBytes, &apiFailureResponse); err != nil {
 			return "", fmt.Errorf("failed to unmarshal failure response: %w", err)
 		}
-		if err := pr.query.PayoutFailure(apiReqBody.PartnerRequestID); err != nil {
+		apiFailureResponse.PayoutTransactionID = apiReqBody.PartnerRequestID
+		if err := pr.query.PayoutFailure(&apiFailureResponse); err != nil {
 			return "", fmt.Errorf("failed to update api failure: %w", err)
 		}
 		return "", fmt.Errorf("failed to complete api request: %v", string(respBytes))
