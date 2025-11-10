@@ -213,8 +213,7 @@ func (qr *Query) InitializeDatabase() {
 		// Unified Transactions
 		// ============================================================
 		`CREATE TABLE IF NOT EXISTS transactions (
-			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			transaction_id UUID,
+			transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			transactor_id UUID NOT NULL,
 			receiver_id UUID,
 			transactor_name TEXT,

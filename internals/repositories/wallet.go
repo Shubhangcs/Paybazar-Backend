@@ -27,29 +27,11 @@ func (wr *walletRepo) GetAdminWalletBalance(e echo.Context) (string, error) {
 	return res, nil
 }
 
-func (wr *walletRepo) GetAdminWalletTransactions(e echo.Context) (*[]structures.AdminWalletTransactions, error) {
-	var req = e.Param("admin_id")
-	res, err := wr.query.GetAdminWalletTransactions(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrive admin wallet transactions: %w", err)
-	}
-	return res, nil
-}
-
 func (wr *walletRepo) GetMasterDistributorWalletBalance(e echo.Context) (string, error) {
 	var req = e.Param("master_distributor_id")
 	res, err := wr.query.GetMasterDistributorWalletBalance(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to retrive master distributor balance: %w", err)
-	}
-	return res, nil
-}
-
-func (wr *walletRepo) GetMasterDistributorWalletTransactions(e echo.Context) (*[]structures.MasterDistributorWalletTransactions, error) {
-	var req = e.Param("master_distributor_id")
-	res, err := wr.query.GetMasterDistributorWalletTransactions(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrive master distributor wallet transactions: %w", err)
 	}
 	return res, nil
 }
@@ -63,15 +45,6 @@ func (wr *walletRepo) GetDistributorWalletBalance(e echo.Context) (string, error
 	return res, nil
 }
 
-func (wr *walletRepo) GetDistributorWalletTransactions(e echo.Context) (*[]structures.DistributorWalletTransactions, error) {
-	var req = e.Param("distributor_id")
-	res, err := wr.query.GetDistributorWalletTransactions(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrive distributor wallet transaction: %w", err)
-	}
-	return res, nil
-}
-
 func (wr *walletRepo) GetUserWalletBalance(e echo.Context) (string, error) {
 	var req = e.Param("user_id")
 	res, err := wr.query.GetUserWalletBalance(req)
@@ -79,15 +52,6 @@ func (wr *walletRepo) GetUserWalletBalance(e echo.Context) (string, error) {
 		return "", fmt.Errorf("failed to retrive user balance: %w", err)
 	}
 	return res, nil
-}
-
-func (wr *walletRepo) GetUserWalletTransactions(e echo.Context) (*[]structures.UserWalletTransactions, error) {
-	var req = e.Param("user_id")
-	res, err := wr.query.GetUserWalletTransactions(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrive user transactions: %w", err)
-	}
-	return res, err
 }
 
 func (wr *walletRepo) AdminWalletTopup(e echo.Context) (string, error) {
@@ -102,4 +66,16 @@ func (wr *walletRepo) AdminWalletTopup(e echo.Context) (string, error) {
 		return "", fmt.Errorf("faild to topup admin wallet: %w", err)
 	}
 	return "admin wallet topup successfull", nil
+}
+
+func (wr *walletRepo) GetTransactions(e echo.Context) (*[]structures.WalletTransaction, error) {
+	var req = e.Param("id")
+	if req == "" {
+		return nil, fmt.Errorf("invalid id in params")
+	}
+	res, err := wr.query.GetTransactions(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch transactions: %w", err)
+	}
+	return res, nil
 }

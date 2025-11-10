@@ -55,7 +55,7 @@ func (r *Routes) AdminRoutes(rg *echo.Group) {
 	)
 	var walletHandler = handlers.NewWalletHandler(walletRepo)
 	rg.GET("/wallet/get/balance/:admin_id", walletHandler.GetAdminWalletBalanceRequest)
-	rg.GET("/wallet/get/transactions/:admin_id", walletHandler.GetAdminWalletTransactionsRequest)
+	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
 	rg.POST("/wallet/topup", walletHandler.AdminWalletTopupRequest)
 
 	// Common Request
@@ -92,7 +92,7 @@ func (r *Routes) MasterDistributorRoutes(rg *echo.Group) {
 	)
 	var walletHandler = handlers.NewWalletHandler(walletRepo)
 	rg.GET("/wallet/get/balance/:master_distributor_id", walletHandler.GetMasterDistributorWalletBalanceRequest)
-	rg.GET("/wallet/get/transactions/:master_distributor_id", walletHandler.GetMasterDistributorWalletTransactionsRequest)
+	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
 
 	// Common Request
 	var commonRepo = repositories.NewCommonRepository(
@@ -128,7 +128,7 @@ func (r *Routes) DistributorRoutes(rg *echo.Group) {
 	)
 	var walletHandler = handlers.NewWalletHandler(walletRepo)
 	rg.GET("/wallet/get/balance/:distributor_id", walletHandler.GetDistributorWalletBalanceRequest)
-	rg.GET("/wallet/get/transactions/:distributor_id", walletHandler.GetDistributorWalletTransactionsRequest)
+	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
 
 	// Common Request
 	var commonRepo = repositories.NewCommonRepository(
@@ -164,7 +164,7 @@ func (r *Routes) UserRoutes(rg *echo.Group) {
 	)
 	var walletHandler = handlers.NewWalletHandler(walletRepo)
 	rg.GET("/wallet/get/balance/:user_id", walletHandler.GetUserWalletBalanceRequest)
-	rg.GET("/wallet/get/transactions/:user_id", walletHandler.GetUserWalletTransactionsRequest)
+	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
 
 	// Payout Request
 	var payoutRepo = repositories.NewPayoutRepository(

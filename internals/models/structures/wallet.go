@@ -32,48 +32,19 @@ type AdminWalletTopupRequest struct {
 	Remarks string `json:"remarks"`
 }
 
-type MasterDistributorWalletTransactions struct {
-	TransactionId       string `json:"transaction_id"`
-	MasterDistributorId string `json:"master_distributor_id"`
-	Amount              string `json:"amount"`
-	TransactionType     string `json:"transaction_type"`
-	TransactionService  string `json:"transaction_service"`
-	ReferenceId         string `json:"reference_id"`
-	Remarks             string `json:"remarks"`
-	CreatedAt           string `json:"created_at"`
-}
-
-type AdminWalletTransactions struct {
-	TransactionId      string `json:"transaction_id"`
-	AdminId            string `json:"admin_id"`
-	Amount             string `json:"amount"`
-	TransactionType    string `json:"transaction_type"`
-	TransactionService string `json:"transaction_service"`
-	ReferenceId        string `json:"reference_id"`
-	Remarks            string `json:"remarks"`
-	CreatedAt          string `json:"created_at"`
-}
-
-type DistributorWalletTransactions struct {
-	TransactionId      string `json:"transaction_id"`
-	DistributorId      string `json:"distributor_id"`
-	Amount             string `json:"amount"`
-	TransactionType    string `json:"transaction_type"`
-	TransactionService string `json:"transaction_service"`
-	ReferenceId        string `json:"reference_id"`
-	Remarks            string `json:"remarks"`
-	CreatedAt          string `json:"created_at"`
-}
-
-type UserWalletTransactions struct {
-	TransactionId      string `json:"transaction_id"`
-	UserId             string `json:"user_id"`
-	Amount             string `json:"amount"`
-	TransactionType    string `json:"transaction_type"`
-	TransactionService string `json:"transaction_service"`
-	ReferenceId        string `json:"reference_id"`
-	Remarks            string `json:"remarks"`
-	CreatedAt          string `json:"created_at"`
+type WalletTransaction struct {
+	TransactionID      string  `json:"transaction_id"`
+	TransactorID       string  `json:"transactor_id"`
+	ReceiverID         string  `json:"receiver_id"`
+	TransactorName     string  `json:"transactor_name"`
+	ReceiverName       string  `json:"receiver_name"`
+	TransactorType     string  `json:"transactor_type"`
+	ReceiverType       string  `json:"receiver_type"`
+	TransactionType    string  `json:"transaction_type"`
+	TransactionService string  `json:"transaction_service"`
+	Amount             float64 `json:"amount"`
+	TransactionStatus  string  `json:"transaction_status"`
+	Remarks            string  `json:"remarks"`
 }
 
 type WalletResponse struct {
