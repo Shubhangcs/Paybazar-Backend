@@ -24,7 +24,7 @@ type UserAuthResponse struct {
 	AdminID             string `json:"admin_id" validate:"required,uuid4"`
 	MasterDistributorID string `json:"master_distributor_id" validate:"required,uuid4"`
 	DistributorID       string `json:"distributor_id" validate:"required,uuid4"`
-	IsMpinSet           bool   `json:"is_mpin_set" validate:"required"`
+	IsMpinSet           bool   `json:"is_mpin_set"`
 }
 
 type UserMpinRequest struct {
