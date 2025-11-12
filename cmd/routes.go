@@ -67,6 +67,9 @@ func (r *Routes) AdminRoutes(rg *echo.Group) {
 	var commonHandler = handlers.NewCommonHandler(commonRepo)
 	rg.GET("/get/md/:admin_id", commonHandler.GetAllMasterDistributorsByAdminID)
 	rg.GET("/get/distributor/:master_distributor_id", commonHandler.GetAllDistributorsByMasterDistributorID)
+	rg.GET("/get/user/:distributor_id" , commonHandler.GetAllUsersByDistributorID)
+	rg.GET("/get/distributor/:admin_id" , commonHandler.GetAllDistributorsByAdminID)
+	rg.GET("/get/user/:admin_id" , commonHandler.GetAllUsersByAdminID)
 }
 
 func (r *Routes) MasterDistributorRoutes(rg *echo.Group) {
@@ -123,13 +126,6 @@ func (r *Routes) DistributorRoutes(rg *echo.Group) {
 	var walletHandler = handlers.NewWalletHandler(walletRepo)
 	rg.GET("/wallet/get/balance/:distributor_id", walletHandler.GetDistributorWalletBalanceRequest)
 	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
-
-	// Common Request
-	var commonRepo = repositories.NewCommonRepository(
-		r.Query,
-	)
-	var commonHandler = handlers.NewCommonHandler(commonRepo)
-	rg.GET("/get/user/:distributor_id" , commonHandler.GetAllUsersByDistributorID)
 }
 
 func (r *Routes) UserRoutes(rg *echo.Group) {

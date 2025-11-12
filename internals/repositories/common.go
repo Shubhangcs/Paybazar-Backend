@@ -58,3 +58,33 @@ func (r *commonRepo) GetAllUsersByDistributorID(distributorId string) (*[]struct
 	}
 	return res, nil
 }
+
+
+
+// Distributors by Master Distributor ID
+func (r *commonRepo) GetAllDistributorsByAdminID(adminId string) (*[]structures.DistributorGetResponse, error) {
+	res, err := r.query.GetAllDistributorsByAdminID(adminId)
+	if err != nil {
+		log.Println("DB error while fetching distributors by master distributor ID:", err)
+		return nil, echo.NewHTTPError(500, "Failed to fetch distributors")
+	}
+	if res == nil {
+		empty := []structures.DistributorGetResponse{}
+		return &empty, nil
+	}
+	return res, nil
+}
+
+// Users by Distributor ID
+func (r *commonRepo) GetAllUsersByAdminID(adminId string) (*[]structures.UserGetResponse, error) {
+	res, err := r.query.GetAllUsersByAdminID(adminId)
+	if err != nil {
+		log.Println("DB error while fetching users by distributor ID:", err)
+		return nil, echo.NewHTTPError(500, "Failed to fetch users")
+	}
+	if res == nil {
+		empty := []structures.UserGetResponse{}
+		return &empty, nil
+	}
+	return res, nil
+}

@@ -103,3 +103,50 @@ func (ch *commonHandler) GetAllUsersByDistributorID(e echo.Context) error {
 		Data:    res,
 	})
 }
+
+
+// Get all distributors under a master distributor
+func (ch *commonHandler) GetAllDistributorsByAdminID(e echo.Context) error {
+	masterDistributorID := e.Param("admin_id")
+	res, err := ch.commonRepo.GetAllDistributorsByAdminID(masterDistributorID)
+	if err != nil {
+		return commonRespondWithError(e, err)
+	}
+
+	if len(*res) == 0 {
+		return e.JSON(http.StatusOK, structures.CommonResponse{
+			Message: "no distributors found",
+			Status:  "success",
+			Data:    []interface{}{},
+		})
+	}
+
+	return e.JSON(http.StatusOK, structures.CommonResponse{
+		Message: "distributors fetched successfully",
+		Status:  "success",
+		Data:    res,
+	})
+}
+
+// Get all users under a distributor
+func (ch *commonHandler) GetAllUsersByAdminID(e echo.Context) error {
+	distributorID := e.Param("admin_id")
+	res, err := ch.commonRepo.GetAllUsersByAdminID(distributorID)
+	if err != nil {
+		return commonRespondWithError(e, err)
+	}
+
+	if len(*res) == 0 {
+		return e.JSON(http.StatusOK, structures.CommonResponse{
+			Message: "no users found",
+			Status:  "success",
+			Data:    []interface{}{},
+		})
+	}
+
+	return e.JSON(http.StatusOK, structures.CommonResponse{
+		Message: "users fetched successfully",
+		Status:  "success",
+		Data:    res,
+	})
+}
