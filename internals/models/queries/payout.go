@@ -46,7 +46,7 @@ WHERE
 
 
 func (q *Query) CheckMpin(userID string, mpin string) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM users WHERE user_id = $1 AND mpin = $2)`
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE user_id = $1 AND user_mpin = $2)`
 	var hasMpin bool
 	err := q.Pool.QueryRow(context.Background(), query, userID, mpin).Scan(&hasMpin)
 	return hasMpin, err
