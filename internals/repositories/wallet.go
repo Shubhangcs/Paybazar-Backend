@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/queries"
 	"github.com/Srujankm12/paybazar-api/internals/models/structures"
@@ -18,64 +18,106 @@ func NewWalletRepository(query *queries.Query) *walletRepo {
 	}
 }
 
+// Helper for binding + validation
+func (wr *walletRepo) bindAndValidate(e echo.Context, v interface{}) error {
+	if err := e.Bind(v); err != nil {
+		return echo.NewHTTPError(400, "Invalid request format")
+	}
+	if err := e.Validate(v); err != nil {
+		return echo.NewHTTPError(400, "Invalid request data")
+	}
+	return nil
+}
+
+// ---------------------------
+// Wallet Balance Queries
+// ---------------------------
+
 func (wr *walletRepo) GetAdminWalletBalance(e echo.Context) (string, error) {
-	var req = e.Param("admin_id")
-	res, err := wr.query.GetAdminWalletBalance(req)
+	adminID := e.Param("admin_id")
+	if adminID == "" {
+		return "", echo.NewHTTPError(400, "admin_id is required")
+	}
+	res, err := wr.query.GetAdminWalletBalance(adminID)
 	if err != nil {
-		return "", fmt.Errorf("failed to retrive admin balance: %w", err)
+		log.Println("DB get admin wallet balance error:", err)
+		return "", echo.NewHTTPError(500, "Failed to retrieve admin wallet balance")
 	}
 	return res, nil
 }
 
 func (wr *walletRepo) GetMasterDistributorWalletBalance(e echo.Context) (string, error) {
-	var req = e.Param("master_distributor_id")
-	res, err := wr.query.GetMasterDistributorWalletBalance(req)
+	masterDistributorID := e.Param("master_distributor_id")
+	if masterDistributorID == "" {
+		return "", echo.NewHTTPError(400, "master_distributor_id is required")
+	}
+	res, err := wr.query.GetMasterDistributorWalletBalance(masterDistributorID)
 	if err != nil {
-		return "", fmt.Errorf("failed to retrive master distributor balance: %w", err)
+		log.Println("DB get master distributor wallet balance error:", err)
+		return "", echo.NewHTTPError(500, "Failed to retrieve master distributor wallet balance")
 	}
 	return res, nil
 }
 
 func (wr *walletRepo) GetDistributorWalletBalance(e echo.Context) (string, error) {
-	var req = e.Param("distributor_id")
-	res, err := wr.query.GetDistributorWalletBalance(req)
+	distributorID := e.Param("distributor_id")
+	if distributorID == "" {
+		return "", echo.NewHTTPError(400, "distributor_id is required")
+	}
+	res, err := wr.query.GetDistributorWalletBalance(distributorID)
 	if err != nil {
-		return "", fmt.Errorf("failed to retrive distributor balance: %w", err)
+		log.Println("DB get distributor wallet balance error:", err)
+		return "", echo.NewHTTPError(500, "Failed to retrieve distributor wallet balance")
 	}
 	return res, nil
 }
 
 func (wr *walletRepo) GetUserWalletBalance(e echo.Context) (string, error) {
-	var req = e.Param("user_id")
-	res, err := wr.query.GetUserWalletBalance(req)
+	userID := e.Param("user_id")
+	if userID == "" {
+		return "", echo.NewHTTPError(400, "user_id is required")
+	}
+	res, err := wr.query.GetUserWalletBalance(userID)
 	if err != nil {
-		return "", fmt.Errorf("failed to retrive user balance: %w", err)
+		log.Println("DB get user wallet balance error:", err)
+		return "", echo.NewHTTPError(500, "Failed to retrieve user wallet balance")
 	}
 	return res, nil
 }
 
+// ---------------------------
+// Admin Wallet Topup
+// ---------------------------
+
 func (wr *walletRepo) AdminWalletTopup(e echo.Context) (string, error) {
 	var req structures.AdminWalletTopupRequest
-	if err := e.Bind(&req); err != nil {
-		return "", fmt.Errorf("invalid request format: %w", err)
-	}
-	if err := e.Validate(req); err != nil {
-		return "", fmt.Errorf("invalid request body: %w", err)
+	if err := wr.bindAndValidate(e, &req); err != nil {
+		return "", err
 	}
 	if err := wr.query.AdminWalletTopup(&req); err != nil {
-		return "", fmt.Errorf("faild to topup admin wallet: %w", err)
+		log.Println("DB admin wallet topup error:", err)
+		return "", echo.NewHTTPError(500, "Failed to top up admin wallet")
 	}
-	return "admin wallet topup successfull", nil
+	return "Admin wallet top-up successful", nil
 }
 
+// ---------------------------
+// Wallet Transaction History
+// ---------------------------
+
 func (wr *walletRepo) GetTransactions(e echo.Context) (*[]structures.WalletTransaction, error) {
-	var req = e.Param("id")
-	if req == "" {
-		return nil, fmt.Errorf("invalid id in params")
+	id := e.Param("id")
+	if id == "" {
+		return nil, echo.NewHTTPError(400, "id is required")
 	}
-	res, err := wr.query.GetTransactions(req)
+	res, err := wr.query.GetTransactions(id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch transactions: %w", err)
+		log.Println("DB get transactions error:", err)
+		return nil, echo.NewHTTPError(500, "Failed to fetch transactions")
+	}
+	if res == nil {
+		empty := []structures.WalletTransaction{}
+		return &empty, nil
 	}
 	return res, nil
 }

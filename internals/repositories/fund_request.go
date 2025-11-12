@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/queries"
 	"github.com/Srujankm12/paybazar-api/internals/models/structures"
@@ -18,59 +18,82 @@ func NewFundRequestRepository(query *queries.Query) *fundRequestRepo {
 	}
 }
 
+func (fr *fundRequestRepo) bindAndValidate(e echo.Context, v interface{}) error {
+	if err := e.Bind(v); err != nil {
+		return echo.NewHTTPError(400, "Invalid request format")
+	}
+	if err := e.Validate(v); err != nil {
+		return echo.NewHTTPError(400, "Invalid request data")
+	}
+	return nil
+}
+
 func (fr *fundRequestRepo) CreateFundRequest(e echo.Context) (string, error) {
 	var req structures.CreateFundRequestModel
-	if err := e.Bind(&req); err != nil {
-		return "", fmt.Errorf("invalid request format: %w", err)
+	if err := fr.bindAndValidate(e, &req); err != nil {
+		return "", err
 	}
-	if err := e.Validate(req); err != nil {
-		return "", fmt.Errorf("invalid request body: %w", err)
+	if err := fr.query.CreateFundRequest(&req); err != nil {
+		log.Println("DB create fund request error:", err)
+		return "", echo.NewHTTPError(500, "Failed to create fund request")
 	}
-	err := fr.query.CreateFundRequest(&req)
-	if err != nil {
-		return "", fmt.Errorf("failed to register fund request: %w", err)
-	}
-	return "fund request created successfully", err
+	return "Fund request created successfully", nil
 }
 
 func (fr *fundRequestRepo) RejectFundRequest(e echo.Context) (string, error) {
-	var req string = e.Param("request_id")
-	err := fr.query.RejectFundRequest(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to reject fund request: %w", err)
+	requestID := e.Param("request_id")
+	if requestID == "" {
+		return "", echo.NewHTTPError(400, "request_id is required")
 	}
-	return "fund request rejected successfully", nil
+	if err := fr.query.RejectFundRequest(requestID); err != nil {
+		log.Println("DB reject fund request error:", err)
+		return "", echo.NewHTTPError(500, "Failed to reject fund request")
+	}
+	return "Fund request rejected successfully", nil
 }
 
 func (fr *fundRequestRepo) AcceptFundRequest(e echo.Context) (string, error) {
 	var req structures.AcceptFundRequestModel
-	if err := e.Bind(&req); err != nil {
-		return "", fmt.Errorf("invalid request format: %w", err)
+	if err := fr.bindAndValidate(e, &req); err != nil {
+		return "", err
 	}
-	if err := e.Validate(req); err != nil {
-		return "", fmt.Errorf("invalid request body: %w", err)
+	if err := fr.query.AcceptFundRequest(&req); err != nil {
+		log.Println("DB accept fund request error:", err)
+		return "", echo.NewHTTPError(500, "Failed to accept fund request")
 	}
-	err := fr.query.AcceptFundRequest(&req)
-	if err != nil {
-		return "", fmt.Errorf("failed to accept fund request: %w", err)
-	}
-	return "fund request accepted successfully", nil
+	return "Fund request accepted successfully", nil
 }
 
 func (fr *fundRequestRepo) GetFundRequestsById(e echo.Context) (*[]structures.GetFundRequestModel, error) {
-	var req string = e.Param("requester_id")
-	res, err := fr.query.GetFundRequestsById(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get all fund request: %w", err)
+	requesterID := e.Param("requester_id")
+	if requesterID == "" {
+		return nil, echo.NewHTTPError(400, "requester_id is required")
 	}
-	return res, err
+	res, err := fr.query.GetFundRequestsById(requesterID)
+	if err != nil {
+		log.Println("DB get fund requests by id error:", err)
+		return nil, echo.NewHTTPError(500, "Failed to fetch fund requests")
+	}
+	if res == nil {
+		empty := []structures.GetFundRequestModel{}
+		return &empty, nil
+	}
+	return res, nil
 }
 
 func (fr *fundRequestRepo) GetAllFundRequests(e echo.Context) (*[]structures.GetFundRequestModel, error) {
-	var req = e.Param("admin_id")
-	res, err := fr.query.GetAllFundRequests(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get all fund request: %w", err)
+	adminID := e.Param("admin_id")
+	if adminID == "" {
+		return nil, echo.NewHTTPError(400, "admin_id is required")
 	}
-	return res, err
+	res, err := fr.query.GetAllFundRequests(adminID)
+	if err != nil {
+		log.Println("DB get all fund requests error:", err)
+		return nil, echo.NewHTTPError(500, "Failed to fetch fund requests")
+	}
+	if res == nil {
+		empty := []structures.GetFundRequestModel{}
+		return &empty, nil
+	}
+	return res, nil
 }

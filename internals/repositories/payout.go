@@ -3,8 +3,8 @@ package repositories
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -25,43 +25,53 @@ func NewPayoutRepository(query *queries.Query) *payoutRepo {
 	}
 }
 
+func (pr *payoutRepo) bindAndValidate(e echo.Context, v interface{}) error {
+	if err := e.Bind(v); err != nil {
+		return echo.NewHTTPError(400, "Invalid request format")
+	}
+	if err := e.Validate(v); err != nil {
+		return echo.NewHTTPError(400, "Invalid request data")
+	}
+	return nil
+}
+
 func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 	var req structures.PayoutInitilizationRequest
-	if err := e.Bind(&req); err != nil {
-		return "", fmt.Errorf("invalid request format: %w", err)
-	}
-	if err := e.Validate(req); err != nil {
-		return "", fmt.Errorf("invalid request data: %w", err)
+	if err := pr.bindAndValidate(e, &req); err != nil {
+		return "", err
 	}
 
-	amt, err := strconv.ParseFloat(req.Amount , 64)
+	amt, err := strconv.ParseFloat(req.Amount, 64)
 	if err != nil {
-		return "" , fmt.Errorf("failed to parse amount: %w", err)
+		log.Println("parse amount error:", err)
+		return "", echo.NewHTTPError(400, "Invalid amount")
 	}
 
 	if amt < 1000 {
-		return "" , fmt.Errorf("failed to execuite minimum transaction is 1000")
+		return "", echo.NewHTTPError(400, "Minimum transaction amount is 1000")
 	}
 
 	// Check User Balance
 	hasBalance, err := pr.query.CheckUserBalance(req.UserID, req.Amount)
 	if err != nil {
-		return "", fmt.Errorf("failed to check user wallet balance: %w", err)
+		log.Println("DB check user balance error:", err)
+		return "", echo.NewHTTPError(500, "Failed to verify wallet balance")
 	}
 	if !hasBalance {
-		return "", fmt.Errorf("insufficient balance")
+		return "", echo.NewHTTPError(400, "Insufficient balance")
 	}
 
 	// Check Payout Limit
-	hasExceded, err := pr.query.CheckPayoutLimit(req.UserID, req.Amount)
+	hasNotExceeded, err := pr.query.CheckPayoutLimit(req.UserID, req.Amount)
 	if err != nil {
-		return "", fmt.Errorf("failed to check payout limit: %w", err)
+		log.Println("DB check payout limit error:", err)
+		return "", echo.NewHTTPError(500, "Failed to verify payout limit")
 	}
-	if !hasExceded {
-		return "", fmt.Errorf("payout limit exceded")
+	if !hasNotExceeded {
+		return "", echo.NewHTTPError(400, "Payout limit exceeded")
 	}
 
-	// Initilize Payout Request
+	// Initialize Payout Request (prepare DB entry / partner request id etc.)
 	apiReqBody, err := pr.query.InitilizePayoutRequest(&structures.PayoutInitilizationRequest{
 		UserID:          req.UserID,
 		MobileNumber:    req.MobileNumber,
@@ -75,42 +85,46 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 		Commission:      req.Commission,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to initilize payout request: %w", err)
+		log.Println("DB initialize payout request error:", err)
+		return "", echo.NewHTTPError(500, "Failed to initialize payout")
 	}
 
-	// Api Request
-	if err := e.Validate(req); err != nil {
-		return "", fmt.Errorf("failed to validate api request format: %w", err)
-	}
+	// Prepare external API request
 	token := os.Getenv("RKIT_API_TOKEN")
 	if token == "" {
-		return "", fmt.Errorf("missing RKIT_API_TOKEN")
+		log.Println("missing RKIT_API_TOKEN")
+		return "", echo.NewHTTPError(500, "Payout provider configuration error")
 	}
-	var url string = "https://v2bapi.rechargkit.biz/rkitpayout/payoutTransfer"
+
+	url := "https://v2bapi.rechargkit.biz/rkitpayout/payoutTransfer"
 	reqBody, err := json.Marshal(apiReqBody)
 	if err != nil {
-		return "", fmt.Errorf("failed to encode api request json: %w", err)
+		log.Println("marshal api request error:", err)
+		return "", echo.NewHTTPError(500, "Failed to prepare payout request")
 	}
 
 	apiRequest, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
 	if err != nil {
-		return "", fmt.Errorf("failed to create payout request: %w", err)
+		log.Println("create api request error:", err)
+		return "", echo.NewHTTPError(500, "Failed to create payout request")
 	}
 	apiRequest.Header.Set("Content-Type", "application/json")
 	apiRequest.Header.Set("Authorization", "Bearer "+token)
 
 	client := &http.Client{
-		Timeout: 20 * time.Second, // extra guard; ctx still rules
+		Timeout: 20 * time.Second,
 	}
 	resp, err := client.Do(apiRequest)
 	if err != nil {
-		return "", fmt.Errorf("failed to send api request: %w", err)
+		log.Println("send api request error:", err)
+		return "", echo.NewHTTPError(502, "Failed to contact payout provider")
 	}
 	defer resp.Body.Close()
 
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read response body: %w", err)
+		log.Println("read api response error:", err)
+		return "", echo.NewHTTPError(502, "Failed to read payout provider response")
 	}
 
 	var base struct {
@@ -118,28 +132,38 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 	}
 
 	if err := json.Unmarshal(respBytes, &base); err != nil {
-		return "", fmt.Errorf("failed to unmarshal base response: %w", err)
+		log.Println("unmarshal base response error:", err, "response:", string(respBytes))
+		return "", echo.NewHTTPError(502, "Unexpected response from payout provider")
 	}
 
 	if base.Error != 0 {
 		var apiFailureResponse structures.PayoutApiFailureResponse
 		if err := json.Unmarshal(respBytes, &apiFailureResponse); err != nil {
-			return "", fmt.Errorf("failed to unmarshal failure response: %w", err)
+			// still log the raw response for debugging
+			log.Println("unmarshal failure response error:", err, "response:", string(respBytes))
+			return "", echo.NewHTTPError(502, "Payout provider returned an error")
 		}
+		// attach our partner request id to failure record and persist
 		apiFailureResponse.PayoutTransactionID = apiReqBody.PartnerRequestID
 		if err := pr.query.PayoutFailure(&apiFailureResponse); err != nil {
-			return "", fmt.Errorf("failed to update api failure: %w", err)
+			log.Println("DB record payout failure error:", err)
+			// don't expose DB internals — but report provider error to client
+			return "", echo.NewHTTPError(502, "Payout failed")
 		}
-		return "", fmt.Errorf("failed to complete api request: %v", string(respBytes))
+		return "", echo.NewHTTPError(502, "Payout failed")
 	}
 
 	var apiSuccessResponse structures.PayoutApiSuccessResponse
 	if err := json.Unmarshal(respBytes, &apiSuccessResponse); err != nil {
-		return "", fmt.Errorf("failed to unmarshal success response: %w", err)
+		log.Println("unmarshal success response error:", err, "response:", string(respBytes))
+		return "", echo.NewHTTPError(502, "Unexpected response from payout provider")
 	}
 
 	if err := pr.query.PayoutSuccess(&apiSuccessResponse); err != nil {
-		return "", fmt.Errorf("failed to update api success response: %w", err)
+		log.Println("DB update payout success error:", err)
+		// We successfully reached provider but failed to persist; still inform user provider succeeded.
+		return "", echo.NewHTTPError(500, "Payout succeeded but saving status failed")
 	}
-	return "transaction successfull", nil
+
+	return "Transaction successful", nil
 }
