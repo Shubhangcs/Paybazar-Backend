@@ -225,6 +225,7 @@ func (q *Query) ValidateOTP(req *structures.UserLoginRequest) (*structures.UserA
 			u.user_name,
 			u.admin_id::TEXT AS admin_id,
 			u.master_distributor_id::TEXT AS master_distributor_id,
+			u.user_mpin::TEXT as user_mpin,
 			u.distributor_id::TEXT AS distributor_id,
 			o.phone
 		FROM otps o

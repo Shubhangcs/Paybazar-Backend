@@ -66,8 +66,8 @@ func (r *Routes) AdminRoutes(rg *echo.Group) {
 	)
 	var commonHandler = handlers.NewCommonHandler(commonRepo)
 	rg.GET("/get/md/:admin_id", commonHandler.GetAllMasterDistributorsByAdminID)
-	rg.GET("/get/distributor/:master_distributor_id", commonHandler.GetAllDistributorsByMasterDistributorID)
-	rg.GET("/get/user/:distributor_id" , commonHandler.GetAllUsersByDistributorID)
+	rg.GET("/get/distributors/:master_distributor_id", commonHandler.GetAllDistributorsByMasterDistributorID)
+	rg.GET("/get/users/:distributor_id" , commonHandler.GetAllUsersByDistributorID)
 	rg.GET("/get/distributor/:admin_id" , commonHandler.GetAllDistributorsByAdminID)
 	rg.GET("/get/user/:admin_id" , commonHandler.GetAllUsersByAdminID)
 }
