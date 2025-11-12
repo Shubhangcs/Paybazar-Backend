@@ -27,6 +27,11 @@ type UserAuthResponse struct {
 	IsMpinSet           bool   `json:"is_mpin_set" validate:"required"`
 }
 
+type UserMpinRequest struct {
+	UserID   string `json:"user_id"`
+	UserMPIN string `json:"mpin"`
+}
+
 // Admin Authentication Models
 
 type AdminLoginRequest struct {

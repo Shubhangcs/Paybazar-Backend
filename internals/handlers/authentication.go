@@ -101,3 +101,11 @@ func (ah *authHandler) LoginUserValidateOTPRequest(e echo.Context) error {
 	}
 	return e.JSON(http.StatusOK, structures.AuthResponse{Message: "user login successful", Status: "success", Data: map[string]string{"token": token}})
 }
+
+func (ah *authHandler) SetMpinRequest(e echo.Context) error {
+	res, err := ah.authRepo.SetUserMpin(e)
+	if err != nil {
+		return authRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{Message: res, Status: "success"})
+}

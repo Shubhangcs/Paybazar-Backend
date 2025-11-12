@@ -12,4 +12,5 @@ type AuthInterface interface {
 	LoginDistributor(echo.Context) (string, error)
 	LoginUserSendOTP(echo.Context) (string, error)
 	LoginUserValidateOTP(echo.Context) (string, error)
+	SetUserMpin(echo.Context) (string, error)
 }

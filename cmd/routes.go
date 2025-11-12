@@ -149,6 +149,7 @@ func (r *Routes) UserRoutes(rg *echo.Group) {
 	var authHandler = handlers.NewAuthHandler(authRepo)
 	rg.POST("/login/send/otp", authHandler.LoginUserSendOTPRequest)
 	rg.POST("/login/validate/otp", authHandler.LoginUserValidateOTPRequest)
+	rg.POST("/set/mpin" , authHandler.SetMpinRequest)
 
 	// Fund Request
 	var fundRequestRepo = repositories.NewFundRequestRepository(

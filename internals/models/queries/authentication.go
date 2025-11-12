@@ -341,3 +341,9 @@ func (q *Query) CheckUserExistViaPhone(phone string) (bool, error) {
 	err := q.Pool.QueryRow(context.Background(), query, phone).Scan(&isUserExist)
 	return isUserExist, err
 }
+
+func (q *Query) SetMpin(userId string, mpin string) error {
+	query := `UPDATE users SET user_mpin=$1 WHERE user_id=$2`
+	_, err := q.Pool.Exec(context.Background() , query , mpin , userId)
+	return err
+}

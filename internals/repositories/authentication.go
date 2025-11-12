@@ -265,3 +265,16 @@ func (ar *authRepository) LoginUserValidateOTP(e echo.Context) (string, error) {
 	}
 	return ar.generateTokenFor(res, time.Hour*24*365)
 }
+
+func (ar *authRepository) SetUserMpin(e echo.Context) (string, error) {
+	var req structures.UserMpinRequest
+	if err := ar.bindAndValidate(e, &req); err != nil {
+		return "", err
+	}
+	err := ar.query.SetMpin(req.UserID, req.UserMPIN)
+	if err != nil {
+		log.Println("DB MPIN Setting error:", err)
+		return "", echo.NewHTTPError(401, "Failed to Set MPIN")
+	}
+	return "MPIN Set Successfull", nil
+}
