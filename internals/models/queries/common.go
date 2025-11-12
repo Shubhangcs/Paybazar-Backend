@@ -10,6 +10,7 @@ import (
 func (q *Query) GetAllMasterDistributorsByID(adminId string) (*[]structures.MasterDistributorGetResponse, error) {
 	const query = `
 		SELECT 
+			master_distributor_id,
 			master_distributor_unique_id,
 			master_distributor_name,
 			master_distributor_email,
@@ -36,6 +37,7 @@ func (q *Query) GetAllMasterDistributorsByID(adminId string) (*[]structures.Mast
 	for rows.Next() {
 		var r structures.MasterDistributorGetResponse
 		if err := rows.Scan(
+			&r.MasterDistributorID,
 			&r.MasterDistributorUniqueID,
 			&r.MasterDistributorName,
 			&r.MasterDistributorEmail,
@@ -57,6 +59,7 @@ func (q *Query) GetAllMasterDistributorsByID(adminId string) (*[]structures.Mast
 func (q *Query) GetAllDistributorsByMasterDistributorID(masterDistributorId string) (*[]structures.DistributorGetResponse, error) {
 	const query = `
 		SELECT
+			distributor_id,
 			distributor_unique_id,
 			distributor_name,
 			distributor_email,
@@ -83,6 +86,7 @@ func (q *Query) GetAllDistributorsByMasterDistributorID(masterDistributorId stri
 	for rows.Next() {
 		var r structures.DistributorGetResponse
 		if err := rows.Scan(
+			&r.DistributorID,
 			&r.DistributorUniqueID,
 			&r.DistributorName,
 			&r.DistributorEmail,
@@ -104,6 +108,7 @@ func (q *Query) GetAllDistributorsByMasterDistributorID(masterDistributorId stri
 func (q *Query) GetAllUsersByDistributorID(distributorId string) (*[]structures.UserGetResponse, error) {
 	const query = `
 		SELECT
+			user_id,
 			user_unique_id,
 			user_name,
 			user_email,
@@ -130,6 +135,7 @@ func (q *Query) GetAllUsersByDistributorID(distributorId string) (*[]structures.
 	for rows.Next() {
 		var r structures.UserGetResponse
 		if err := rows.Scan(
+			&r.UserID,
 			&r.UserUniqueID,
 			&r.UserName,
 			&r.UserEmail,

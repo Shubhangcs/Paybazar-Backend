@@ -46,6 +46,7 @@ type Distributor struct {
 }
 
 type MasterDistributorGetResponse struct {
+	MasterDistributorID            string `json:"master_distributor_id"`
 	MasterDistributorUniqueID      string `json:"master_distributor_unique_id"`
 	MasterDistributorName          string `json:"master_distributor_name"`
 	MasterDistributorEmail         string `json:"master_distributor_email"`
@@ -54,6 +55,7 @@ type MasterDistributorGetResponse struct {
 }
 
 type DistributorGetResponse struct {
+	DistributorID            string `json:"distributor_id"`
 	DistributorUniqueID      string `json:"distributor_unique_id"`
 	DistributorName          string `json:"distributor_name"`
 	DistributorEmail         string `json:"distributor_email"`
@@ -62,6 +64,7 @@ type DistributorGetResponse struct {
 }
 
 type UserGetResponse struct {
+	UserID            string `json:"user_id"`
 	UserUniqueID      string `json:"user_unique_id"`
 	UserName          string `json:"user_name"`
 	UserEmail         string `json:"user_email"`

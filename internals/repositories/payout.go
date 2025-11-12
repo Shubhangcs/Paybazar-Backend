@@ -47,7 +47,7 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 		return "", echo.NewHTTPError(400, "Invalid amount")
 	}
 
-	if amt < 1000 {
+	if amt < 1000 || amt > 25000 {
 		return "", echo.NewHTTPError(400, "Minimum transaction amount is 1000")
 	}
 
@@ -62,13 +62,23 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 	}
 
 	// Check Payout Limit
-	hasNotExceeded, err := pr.query.CheckPayoutLimit(req.UserID, req.Amount)
+	// hasNotExceeded, err := pr.query.CheckPayoutLimit(req.UserID, req.Amount)
+	// if err != nil {
+	// 	log.Println("DB check payout limit error:", err)
+	// 	return "", echo.NewHTTPError(500, "Failed to verify payout limit")
+	// }
+	// if !hasNotExceeded {
+	// 	return "", echo.NewHTTPError(400, "Payout limit exceeded")
+	// }
+
+	// Check MPIN
+	hasMpin, err := pr.query.CheckMpin(req.UserID, req.MPIN)
 	if err != nil {
-		log.Println("DB check payout limit error:", err)
-		return "", echo.NewHTTPError(500, "Failed to verify payout limit")
+		log.Println("DB check mpin error:", err)
+		return "", echo.NewHTTPError(500, "Wrong MPIN")
 	}
-	if !hasNotExceeded {
-		return "", echo.NewHTTPError(400, "Payout limit exceeded")
+	if !hasMpin {
+		return "", echo.NewHTTPError(400, "Wrong MPIN")
 	}
 
 	// Initialize Payout Request (prepare DB entry / partner request id etc.)

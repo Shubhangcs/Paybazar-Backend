@@ -215,6 +215,7 @@ func (q *Query) GenerateOTPForUser(phone string) (string, error) {
 
 func (q *Query) ValidateOTP(req *structures.UserLoginRequest) (*structures.UserAuthResponse, error) {
 	var res structures.UserAuthResponse
+	var mpin any
 
 	query := `
 	WITH validated AS (
@@ -238,6 +239,7 @@ func (q *Query) ValidateOTP(req *structures.UserLoginRequest) (*structures.UserA
 		(SELECT user_name FROM validated),
 		(SELECT admin_id FROM validated),
 		(SELECT master_distributor_id FROM validated),
+		(SELECT user_mpin FROM validated),
 		(SELECT distributor_id FROM validated);
 	`
 
@@ -252,8 +254,13 @@ func (q *Query) ValidateOTP(req *structures.UserLoginRequest) (*structures.UserA
 		&res.UserName,
 		&res.AdminID,
 		&res.MasterDistributorID,
+		&mpin,
 		&res.DistributorID,
 	)
+
+	if mpin != nil {
+		res.IsMpinSet = true
+	}
 
 	return &res, err
 }

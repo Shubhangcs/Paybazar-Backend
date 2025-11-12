@@ -124,6 +124,7 @@ func (qr *Query) InitializeDatabase() {
 			user_state TEXT,
 			user_address TEXT,
 			user_pincode TEXT,
+			user_mpin TEXT,
 			user_kyc_status BOOLEAN NOT NULL DEFAULT FALSE,
 			user_wallet_balance NUMERIC(20,2) NOT NULL DEFAULT 0,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

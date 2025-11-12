@@ -28,6 +28,7 @@ type PayoutInitilizationRequest struct {
 	TransferType    string `json:"transfer_type"`
 	Remarks         string `json:"remarks"`
 	Commission      string `json:"commission"`
+	MPIN            string `json:"mpin"`
 }
 
 type PayoutApiRequest struct {

@@ -25,24 +25,33 @@ WHERE
 	return hasBalance, err
 }
 
-func (q *Query) CheckPayoutLimit(userId string, amount string) (bool, error) {
-	var hasPayoutLimit bool
-	query := `
-	SELECT 
-    CASE 
-        WHEN COALESCE(SUM(amount), 0) + $2::numeric <= 25000 THEN TRUE 
-        ELSE FALSE 
-    END AS within_limit
-FROM 
-    payout_service
-WHERE 
-    user_id = $1
-    AND transaction_status = 'SUCCESS'
-    AND created_at::date = CURRENT_DATE;
-`
-	err := q.Pool.QueryRow(context.Background(), query, userId, amount).Scan(&hasPayoutLimit)
-	return hasPayoutLimit, err
+// func (q *Query) CheckPayoutLimit(userId string, amount string) (bool, error) {
+// 	var hasPayoutLimit bool
+// 	query := `
+// 	SELECT 
+//     CASE 
+//         WHEN COALESCE(SUM(amount), 0) + $2::numeric <= 25000 THEN TRUE 
+//         ELSE FALSE 
+//     END AS within_limit
+// FROM 
+//     payout_service
+// WHERE 
+//     user_id = $1
+//     AND transaction_status = 'SUCCESS'
+//     AND created_at::date = CURRENT_DATE;
+// `
+// 	err := q.Pool.QueryRow(context.Background(), query, userId, amount).Scan(&hasPayoutLimit)
+// 	return hasPayoutLimit, err
+// }
+
+
+func (q *Query) CheckMpin(userID string, mpin string) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE user_id = $1 AND mpin = $2)`
+	var hasMpin bool
+	err := q.Pool.QueryRow(context.Background(), query, userID, mpin).Scan(&hasMpin)
+	return hasMpin, err
 }
+
 
 func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationRequest) (*structures.PayoutApiRequest, error) {
 	const query = `
