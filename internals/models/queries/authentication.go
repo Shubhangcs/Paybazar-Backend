@@ -345,6 +345,68 @@ func (q *Query) CheckUserExistViaPhone(phone string) (bool, error) {
 
 func (q *Query) SetMpin(userId string, mpin string) error {
 	query := `UPDATE users SET user_mpin=$1 WHERE user_id=$2`
-	_, err := q.Pool.Exec(context.Background() , query , mpin , userId)
+	_, err := q.Pool.Exec(context.Background(), query, mpin, userId)
 	return err
+}
+
+func (q *Query) VerifyMPIN(userId string, mpin string) (bool, error) {
+	var isValidMpin bool
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE user_id=$1 AND user_mpin=$2) as user_exists`
+	err := q.Pool.QueryRow(context.Background(), query, userId, mpin).Scan(&isValidMpin)
+	return isValidMpin, err
+}
+
+func (q *Query) UpdateProfile(req *structures.UpdateUserProfile) error {
+	query := `
+		UPDATE users
+		SET user_name=$1 , user_email=$2 , user_phone=$3,
+		user_aadhar_number=$4, user_pan_number=$5,
+		user_city=$6, user_state=$7, user_address=$8,
+		user_pincode=$9, user_date_of_birth=$10,
+		user_gender=$11 WHERE user_id=$12;
+	`
+	_, err := q.Pool.Exec(
+		context.Background(),
+		query,
+		req.UserName,
+		req.UserEmail,
+		req.UserPhone,
+		req.UserAadharNumber,
+		req.UserPanNumber,
+		req.UserCity,
+		req.UserState,
+		req.UserAddress,
+		req.UserPincode,
+		req.UserDateOfBirth,
+		req.UserGender,
+		req.UserID,
+	)
+	return err
+}
+
+func (q *Query) FetchProfileDetails(userId string) (*structures.GetUserProfile, error) {
+	var res structures.GetUserProfile
+	query := `
+		SELECT user_id , user_unique_id ,user_name , user_email , user_phone,
+		user_aadhar_number, user_pan_number,
+		user_city, user_state, user_address,
+		user_pincode, user_date_of_birth,
+		user_gender FROM users  WHERE user_id=$1;
+	`
+	err := q.Pool.QueryRow(context.Background(), query, userId).Scan(
+		&res.UserID,
+		&res.UserUniqueID,
+		&res.UserName,
+		&res.UserEmail,
+		&res.UserPhone,
+		&res.UserAadharNumber,
+		&res.UserPanNumber,
+		&res.UserCity,
+		&res.UserState,
+		&res.UserAddress,
+		&res.UserPincode,
+		&res.UserDateOfBirth,
+		&res.UserGender,
+	)
+	return &res, err
 }

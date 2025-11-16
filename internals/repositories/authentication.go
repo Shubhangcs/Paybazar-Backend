@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -273,8 +274,46 @@ func (ar *authRepository) SetUserMpin(e echo.Context) (string, error) {
 	}
 	err := ar.query.SetMpin(req.UserID, req.UserMPIN)
 	if err != nil {
-		log.Println("DB MPIN Setting error:", err)
 		return "", echo.NewHTTPError(401, "Failed to Set MPIN")
 	}
 	return "MPIN Set Successfull", nil
+}
+
+func (ar *authRepository) VerifyMPIN(e echo.Context) error {
+	var req structures.UserMpinRequest
+	if err := e.Bind(&req); err != nil {
+		return fmt.Errorf("invalid request format")
+	}
+	isValid, err := ar.query.VerifyMPIN(req.UserID, req.UserMPIN)
+	if err != nil {
+		return fmt.Errorf("failed to validate mpin")
+	}
+	if !isValid {
+		return fmt.Errorf("invalid mpin")
+	}
+	return nil
+}
+
+func (ar *authRepository) UpdateUserProfile(e echo.Context) error {
+	var req structures.UpdateUserProfile
+	if err := e.Bind(&req); err != nil {
+		return fmt.Errorf("invalid request format")
+	}
+	if err := ar.query.UpdateProfile(&req); err != nil {
+		return fmt.Errorf("failed to update profile")
+	}
+	return nil
+}
+
+func (ar *authRepository) GetUserProfile(e echo.Context) (*structures.GetUserProfile, error) {
+	var userId = e.Param("user_id")
+	if userId == "" {
+		return nil, fmt.Errorf("user id not found")
+	}
+	res, err := ar.query.FetchProfileDetails(userId)
+	if err != nil {
+		log.Println(err)
+		return nil, fmt.Errorf("failed to fetch profile details")
+	}
+	return res, nil
 }

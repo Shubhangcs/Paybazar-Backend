@@ -98,6 +98,39 @@ type DistributorAuthResponse struct {
 	AdminID             string `json:"admin_id" validate:"required,uuid4"`
 }
 
+
+type GetUserProfile struct {
+	UserID           string `json:"user_id"`
+	UserUniqueID     string `json:"user_unique_id"`
+	UserName         string `json:"user_name"`
+	UserEmail        string `json:"user_email"`
+	UserPhone        string `json:"user_phone"`
+	UserAadharNumber string `json:"user_aadhar_number"`
+	UserPanNumber    string `json:"user_pan_number"`
+	UserCity         string `json:"user_city"`
+	UserState        string `json:"user_state"`
+	UserAddress      string `json:"user_address"`
+	UserPincode      string `json:"user_pincode"`
+	UserDateOfBirth  string `json:"user_date_of_birth"`
+	UserGender       string `json:"user_gender"`
+	UserKYCStatus    bool   `json:"user_kyc_status"`
+}
+
+type UpdateUserProfile struct {
+	UserID           string `json:"user_id"`
+	UserName         string `json:"user_name"`
+	UserEmail        string `json:"user_email"`
+	UserPhone        string `json:"user_phone"`
+	UserAadharNumber string `json:"user_aadhar_number"`
+	UserPanNumber    string `json:"user_pan_number"`
+	UserCity         string `json:"user_city"`
+	UserState        string `json:"user_state"`
+	UserAddress      string `json:"user_address"`
+	UserPincode      string `json:"user_pincode"`
+	UserDateOfBirth  string `json:"user_date_of_birth"`
+	UserGender       string `json:"user_gender"`
+}
+
 // Final Auth Response
 
 type AuthResponse struct {

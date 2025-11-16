@@ -109,3 +109,27 @@ func (ah *authHandler) SetMpinRequest(e echo.Context) error {
 	}
 	return e.JSON(http.StatusOK, structures.AuthResponse{Message: res, Status: "success"})
 }
+
+func (ah *authHandler) UpdateUserProfileRequest(e echo.Context) error {
+	err := ah.authRepo.UpdateUserProfile(e)
+	if err != nil {
+		return authRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{Message: "user profile updated successfully", Status: "success"})
+}
+
+func (ah *authHandler) VerifyMPINRequest(e echo.Context) error {
+	err := ah.authRepo.VerifyMPIN(e)
+	if err != nil {
+		return authRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{Message: "mpin verification successful", Status: "success"})
+}
+
+func (ah *authHandler) GetUserProfileRequest(e echo.Context) error {
+	res, err := ah.authRepo.GetUserProfile(e)
+	if err != nil {
+		return authRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{Message: "user profile fetched successfully", Status: "success", Data: map[string]any{"user": res}})
+}

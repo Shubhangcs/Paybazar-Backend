@@ -1,6 +1,9 @@
 package interfaces
 
-import "github.com/labstack/echo/v4"
+import (
+	"github.com/Srujankm12/paybazar-api/internals/models/structures"
+	"github.com/labstack/echo/v4"
+)
 
 type AuthInterface interface {
 	RegisterAdmin(echo.Context) (string, error)
@@ -13,4 +16,7 @@ type AuthInterface interface {
 	LoginUserSendOTP(echo.Context) (string, error)
 	LoginUserValidateOTP(echo.Context) (string, error)
 	SetUserMpin(echo.Context) (string, error)
+	VerifyMPIN(echo.Context) error
+	UpdateUserProfile(echo.Context) error
+	GetUserProfile(echo.Context) (*structures.GetUserProfile, error)
 }
