@@ -260,7 +260,7 @@ func (q *Query) ValidateOTP(req *structures.UserLoginRequest) (*structures.UserA
 		&res.DistributorID,
 	)
 
-	if mpin != nil {
+	if mpin != "" {
 		res.IsMpinSet = true
 	}
 
