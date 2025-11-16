@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/structures"
 )
@@ -343,10 +344,23 @@ func (q *Query) CheckUserExistViaPhone(phone string) (bool, error) {
 	return isUserExist, err
 }
 
-func (q *Query) SetMpin(userId string, mpin string) error {
-	query := `UPDATE users SET user_mpin=$1 WHERE user_id=$2`
-	_, err := q.Pool.Exec(context.Background(), query, mpin, userId)
-	return err
+func (q *Query) SetMpin(userId string, mpin string) (*structures.UserAuthResponse, error) {
+	var res structures.UserAuthResponse
+	var mpins string
+	query := `UPDATE users SET user_mpin=$1 WHERE user_id=$2 RETURNING admin_id, master_distributor_id, distributor_id, user_id, user_unique_id, user_mpin;`
+	err := q.Pool.QueryRow(context.Background(), query, mpin, userId).Scan(
+		&res.AdminID,
+		&res.MasterDistributorID,
+		&res.DistributorID,
+		&res.UserID,
+		&res.UserUniqueID,
+		&mpins,
+	)
+	if mpins == "" {
+		return nil, fmt.Errorf("mpin not set")
+	}
+	res.IsMpinSet = true
+	return &res, err
 }
 
 func (q *Query) VerifyMPIN(userId string, mpin string) (bool, error) {

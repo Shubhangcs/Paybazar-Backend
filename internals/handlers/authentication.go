@@ -107,7 +107,7 @@ func (ah *authHandler) SetMpinRequest(e echo.Context) error {
 	if err != nil {
 		return authRespondWithError(e, err)
 	}
-	return e.JSON(http.StatusOK, structures.AuthResponse{Message: res, Status: "success"})
+	return e.JSON(http.StatusOK, structures.AuthResponse{Message: "mpin set successfull", Status: "success", Data: map[string]string{"token": res}})
 }
 
 func (ah *authHandler) UpdateUserProfileRequest(e echo.Context) error {

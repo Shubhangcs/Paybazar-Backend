@@ -272,11 +272,15 @@ func (ar *authRepository) SetUserMpin(e echo.Context) (string, error) {
 	if err := ar.bindAndValidate(e, &req); err != nil {
 		return "", err
 	}
-	err := ar.query.SetMpin(req.UserID, req.UserMPIN)
+	res, err := ar.query.SetMpin(req.UserID, req.UserMPIN)
 	if err != nil {
 		return "", echo.NewHTTPError(401, "Failed to Set MPIN")
 	}
-	return "MPIN Set Successfull", nil
+	token, err := ar.jwtUtils.GenerateToken(res, time.Hour*24)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate token")
+	}
+	return token, nil
 }
 
 func (ar *authRepository) VerifyMPIN(e echo.Context) error {
