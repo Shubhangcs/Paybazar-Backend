@@ -32,7 +32,6 @@ func (qr *Query) InitializeDatabase() {
 		`CREATE SEQUENCE IF NOT EXISTS master_distributor_seq START 1;`,
 		`CREATE SEQUENCE IF NOT EXISTS distributor_seq START 1;`,
 		`CREATE SEQUENCE IF NOT EXISTS user_seq START 1;`,
-		`CREATE SEQUENCE IF NOT EXISTS fund_request_seq START 1;`,
 
 		// ============================================================
 		// Common trigger function
@@ -54,6 +53,7 @@ func (qr *Query) InitializeDatabase() {
 			admin_email TEXT UNIQUE NOT NULL,
 			admin_password TEXT NOT NULL,
 			admin_wallet_balance NUMERIC(20,2) NOT NULL DEFAULT 0,
+			admin_blocked BOOLEAN NOT NULL DEFAULT FALSE,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);`,
@@ -73,6 +73,7 @@ func (qr *Query) InitializeDatabase() {
 			master_distributor_email TEXT UNIQUE NOT NULL,
 			master_distributor_password TEXT NOT NULL,
 			master_distributor_wallet_balance NUMERIC(20,2) NOT NULL DEFAULT 0,
+			master_distributor_blocked BOOLEAN NOT NULL DEFAULT FALSE,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE
@@ -94,6 +95,7 @@ func (qr *Query) InitializeDatabase() {
 			distributor_email TEXT UNIQUE NOT NULL,
 			distributor_password TEXT NOT NULL,
 			distributor_wallet_balance NUMERIC(20,2) NOT NULL DEFAULT 0,
+			distributor_blocked BOOLEAN NOT NULL DEFAULT FALSE,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			FOREIGN KEY (master_distributor_id) REFERENCES master_distributors(master_distributor_id) ON DELETE CASCADE,
@@ -127,6 +129,7 @@ func (qr *Query) InitializeDatabase() {
 			user_mpin TEXT,
 			user_kyc_status BOOLEAN NOT NULL DEFAULT FALSE,
 			user_wallet_balance NUMERIC(20,2) NOT NULL DEFAULT 0,
+			user_blocked BOOLEAN NOT NULL DEFAULT FALSE,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE,
@@ -169,9 +172,7 @@ func (qr *Query) InitializeDatabase() {
 		`CREATE TABLE IF NOT EXISTS fund_requests (
 			admin_id UUID NOT NULL,
 			request_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			request_unique_id TEXT UNIQUE NOT NULL DEFAULT ('FR' || LPAD(nextval('fund_request_seq')::TEXT, 7, '0')),
 			requester_id UUID NOT NULL,
-			requester_unique_id TEXT NOT NULL,
 			requester_name TEXT NOT NULL,
 			requester_type TEXT NOT NULL CHECK (requester_type IN ('USER','DISTRIBUTOR','MASTER_DISTRIBUTOR')),
 			amount NUMERIC(20,2) NOT NULL DEFAULT 0,
@@ -239,6 +240,32 @@ func (qr *Query) InitializeDatabase() {
 			ON transactions (transaction_service);`,
 		`CREATE INDEX IF NOT EXISTS idx_transactions_status
 			ON transactions (transaction_status);`,
+		`CREATE TABLE IF NOT EXISTS banks(
+			bank_name TEXT NOT NULL,
+			ifsc_code TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE TABLE IF NOT EXISTS beneficiaries(
+			beneficiary_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			mobile_number TEXT NOT NULL,
+			bank_name TEXT NOT NULL,
+			ifsc_code TEXT NOT NULL,
+			account_number TEXT NOT NULL,
+			beneficiary_name TEXT NOT NULL,
+			beneficiary_phone TEXT NOT NULL,
+			beneficiary_verified BOOLEAN NOT NULL DEFAULT FALSE,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE TABLE IF NOT EXISTS tickets(
+			ticket_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			admin_id UUID NOT NULL,
+			name TEXT NOT NULL,
+			subject TEXT NOT NULL,
+			email TEXT NOT NULL,
+			phone TEXT NOT NULL,
+			message TEXT NOT NULL,
+			FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE
+		)`,
 	}
 
 	tx, err := qr.Pool.BeginTx(ctx, pgx.TxOptions{})

@@ -70,6 +70,11 @@ func (r *Routes) AdminRoutes(rg *echo.Group) {
 	rg.GET("/get/users/:distributor_id" , commonHandler.GetAllUsersByDistributorID)
 	rg.GET("/get/distributor/:admin_id" , commonHandler.GetAllDistributorsByAdminID)
 	rg.GET("/get/user/:admin_id" , commonHandler.GetAllUsersByAdminID)
+
+	// Ticket Requests
+	var ticketRepo = repositories.NewTicketRepo(r.Query)
+	var ticketHan = handlers.NewTicketHandler(ticketRepo)
+	rg.GET("/get/tickets/:admin_id" , ticketHan.GetAllTickets)
 }
 
 func (r *Routes) MasterDistributorRoutes(rg *echo.Group) {
@@ -163,4 +168,22 @@ func (r *Routes) UserRoutes(rg *echo.Group) {
 	)
 	var payoutHandler = handlers.NewPayoutHandler(payoutRepo)
 	rg.POST("/payout", payoutHandler.PayoutRequest)
+
+	// Bank Requests
+	var bankRepo = repositories.NewBankRepo(r.Query)
+	var bankHandler = handlers.NewBankHandler(bankRepo)
+	rg.GET("/get/banks" , bankHandler.GetAllBanks)
+	rg.POST("/add/bank" , bankHandler.CreateBank)
+
+	// Beneficary Requests
+	var benRepo = repositories.NewBeneficiaryRepo(r.Query)
+	var benHandler = handlers.NewBeneficiaryHandler(benRepo)
+	rg.GET("/get/beneficiaries/:phone" , benHandler.GetBeneficiaries)
+	rg.GET("/verify/beneficiaries/:ben_id" , benHandler.VerifyBeneficiary)
+	rg.POST("/add/beneficiary" , benHandler.AddNewBeneficiary)
+
+	// Ticket Requests
+	var ticketRepo = repositories.NewTicketRepo(r.Query)
+	var ticketHan = handlers.NewTicketHandler(ticketRepo)
+	rg.POST("/add/ticket" , ticketHan.AddNewTicket)
 }
