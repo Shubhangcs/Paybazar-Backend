@@ -15,7 +15,6 @@ type CreateFundRequestModel struct {
 
 type GetFundRequestModel struct {
 	RequestId         string `json:"request_id" validate:"required,uuid4"`
-	RequestUniqueId   string `json:"request_unique_id" validate:"required"`
 	RequesterId       string `json:"requester_id" validate:"required,uuid4"`
 	RequesterUniqueId string `json:"requester_unique_id" validate:"required"`
 	RequesterName     string `json:"requester_name" validate:"required"`

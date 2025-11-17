@@ -14,7 +14,8 @@ func (q *Query) GetFundRequestsById(requesterId string) (*[]structures.GetFundRe
 
 	const query = `
 		SELECT
-			request_unique_id,
+			request_id,
+			requester_id,
 			requester_unique_id,
 			requester_name,
 			requester_type,
@@ -44,7 +45,8 @@ func (q *Query) GetFundRequestsById(requesterId string) (*[]structures.GetFundRe
 	for rows.Next() {
 		var fr structures.GetFundRequestModel
 		if err := rows.Scan(
-			&fr.RequestUniqueId,   // request_unique_id
+			&fr.RequestId,
+			&fr.RequesterId,
 			&fr.RequesterUniqueId, // requester_unique_id
 			&fr.RequesterName,     // requester_name
 			&fr.RequesterType,     // requester_type
@@ -73,7 +75,6 @@ func (q *Query) GetAllFundRequests(adminId string) (*[]structures.GetFundRequest
 	const query = `
 		SELECT
 			request_id,
-			request_unique_id,
 			requester_id,
 			requester_unique_id,
 			requester_name,
@@ -105,7 +106,6 @@ func (q *Query) GetAllFundRequests(adminId string) (*[]structures.GetFundRequest
 		var fr structures.GetFundRequestModel
 		if err := rows.Scan(
 			&fr.RequestId,         // request_id
-			&fr.RequestUniqueId,   // request_unique_id
 			&fr.RequesterId,       // requester_id
 			&fr.RequesterUniqueId, // requester_unique_id
 			&fr.RequesterName,     // requester_name
