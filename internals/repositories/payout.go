@@ -52,7 +52,7 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 	}
 
 	// Check User Balance
-	hasBalance, err := pr.query.CheckUserBalance(req.UserID, req.Amount)
+	hasBalance, err := pr.query.CheckUserBalance(req.UserID, req.Amount , req.Commission)
 	if err != nil {
 		log.Println("DB check user balance error:", err)
 		return "", echo.NewHTTPError(500, "Failed to verify wallet balance")

@@ -9,11 +9,11 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (q *Query) CheckUserBalance(userId string, amount string) (bool, error) {
+func (q *Query) CheckUserBalance(userId string, amount string, commission string) (bool, error) {
 	var hasBalance bool
 	query := `SELECT 
     CASE 
-        WHEN user_wallet_balance >= $2::numeric THEN TRUE
+        WHEN user_wallet_balance >= ($2::numeric + $3::numeric) THEN TRUE
         ELSE FALSE
     END AS has_sufficient_balance
 FROM 
@@ -21,7 +21,7 @@ FROM
 WHERE 
     user_id = $1;
 `
-	err := q.Pool.QueryRow(context.Background(), query, userId, amount).Scan(&hasBalance)
+	err := q.Pool.QueryRow(context.Background(), query, userId, amount,commission).Scan(&hasBalance)
 	return hasBalance, err
 }
 
