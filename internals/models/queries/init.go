@@ -174,6 +174,7 @@ func (qr *Query) InitializeDatabase() {
 			request_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			requester_id UUID NOT NULL,
 			requester_name TEXT NOT NULL,
+			requester_unique_id TEXT NOT NULL,
 			requester_type TEXT NOT NULL CHECK (requester_type IN ('USER','DISTRIBUTOR','MASTER_DISTRIBUTOR')),
 			amount NUMERIC(20,2) NOT NULL DEFAULT 0,
 			bank_name TEXT NOT NULL,
