@@ -5,7 +5,7 @@ type CreateFundRequestModel struct {
 	RequesterID       string `json:"requester_id" validate:"required,uuid4"`
 	RequesterUniqueID string `json:"requester_unique_id" validate:"required"`
 	RequesterName     string `json:"requester_name" validate:"required"`
-	RequesterType     string `json:"requster_type" validate:"required"`
+	RequesterType     string `json:"requester_type" validate:"required"`
 	Amount            string `json:"amount" validate:"required"`
 	RequestDate       string `json:"request_date" validate:"required"`
 	BankName          string `json:"bank_name" validate:"required"`
