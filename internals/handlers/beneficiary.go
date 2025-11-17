@@ -41,3 +41,11 @@ func (bh *beneficiaryHandler) VerifyBeneficiary(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, structures.FundRequestResponse{Message: "beneficiaries verification successfully", Status: "success"})
 }
+
+func (bh *beneficiaryHandler) DeleteBeneficiary(c echo.Context) error {
+	err := bh.repo.DeleteBeneficiary(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, structures.FundRequestResponse{Message: err.Error(), Status: "falied"})
+	}
+	return c.JSON(http.StatusOK, structures.FundRequestResponse{Message: "beneficiaries deleted successfully", Status: "success"})
+}

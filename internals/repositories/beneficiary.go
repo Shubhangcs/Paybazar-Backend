@@ -52,3 +52,14 @@ func (r *beneficiaryRepo) VerifyBeneficiary(e echo.Context) error {
 	}
 	return nil
 }
+
+func (r *beneficiaryRepo) DeleteBeneficiary(e echo.Context) error {
+	beneficiaryId := e.Param("ben_id")
+	if beneficiaryId == "" {
+		return fmt.Errorf("beneficiary id not found")
+	}
+	if err := r.query.DeleteBeneficiary(beneficiaryId); err != nil {
+		return fmt.Errorf("failed to delete beneficiary")
+	}
+	return nil
+}

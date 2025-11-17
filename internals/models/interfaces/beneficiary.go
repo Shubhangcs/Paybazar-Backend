@@ -9,4 +9,5 @@ type Beneficiary interface {
 	GetBeneficiaries(echo.Context) (*[]structures.BeneficiaryModel, error)
 	AddNewBeneficiary(echo.Context) error
 	VerifyBeneficiary(echo.Context) error
+	DeleteBeneficiary(echo.Context) error
 }

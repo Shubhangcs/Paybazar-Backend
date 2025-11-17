@@ -37,3 +37,9 @@ func (q *Query) VerifyBenificary(beneficiaryId string) error {
 	_, err := q.Pool.Exec(context.Background(), query, beneficiaryId)	
 	return err
 }
+
+func (q *Query) DeleteBeneficiary(beneficiaryId string) error {
+	query := `DELETE FROM beneficiaries WHERE beneficiary_id=$1`
+	_, err := q.Pool.Exec(context.Background(),query,beneficiaryId)
+	return err
+}
