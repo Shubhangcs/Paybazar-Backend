@@ -7,10 +7,8 @@ type CreateFundRequestModel struct {
 	RequesterName     string `json:"requester_name" validate:"required"`
 	RequesterType     string `json:"requster_type" validate:"required"`
 	Amount            string `json:"amount" validate:"required"`
+	RequestDate       string `json:"request_date" validate:"required"`
 	BankName          string `json:"bank_name" validate:"required"`
-	AccountNumber     string `json:"account_number" validate:"required"`
-	IFSCCode          string `json:"ifsc_code" validate:"required"`
-	BankBranch        string `json:"bank_branch" validate:"required"`
 	UTRNumber         string `json:"utr_number" validate:"required"`
 	Remarks           string `json:"remarks" validate:"required"`
 }
@@ -24,9 +22,7 @@ type GetFundRequestModel struct {
 	RequesterType     string `json:"requester_type" validate:"required"`
 	Amount            string `json:"amount" validate:"required"`
 	BankName          string `json:"bank_name" validate:"required"`
-	AccountNumber     string `json:"account_number" validate:"required"`
-	IFSCCode          string `json:"ifsc_code" validate:"required"`
-	BankBranch        string `json:"bank_branch" validate:"required"`
+	RequestDate       string `json:"request_date" validate:"required"`
 	UTRNumber         string `json:"utr_number" validate:"required"`
 	Remarks           string `json:"remarks" validate:"required"`
 	RequestStatus     string `json:"request_status" validate:"required"`

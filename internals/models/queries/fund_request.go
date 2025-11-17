@@ -20,10 +20,8 @@ func (q *Query) GetFundRequestsById(requesterId string) (*[]structures.GetFundRe
 			requester_type,
 			amount,
 			bank_name,
-			account_number,
-			ifsc_code,
-			bank_branch,
 			utr_number,
+			request_date,
 			request_status,
 			remarks
 		FROM 
@@ -52,10 +50,8 @@ func (q *Query) GetFundRequestsById(requesterId string) (*[]structures.GetFundRe
 			&fr.RequesterType,     // requester_type
 			&fr.Amount,            // amount
 			&fr.BankName,          // bank_name
-			&fr.AccountNumber,     // account_number
-			&fr.IFSCCode,          // ifsc_code
-			&fr.BankBranch,        // bank_branch
 			&fr.UTRNumber,         // utr_number
+			&fr.RequestDate,
 			&fr.RequestStatus,     // request_status
 			&fr.Remarks,           // remarks
 		); err != nil {
@@ -84,10 +80,8 @@ func (q *Query) GetAllFundRequests(adminId string) (*[]structures.GetFundRequest
 			requester_type,
 			amount,
 			bank_name,
-			account_number,
-			ifsc_code,
-			bank_branch,
 			utr_number,
+			request_date,
 			request_status,
 			remarks
 		FROM 
@@ -117,11 +111,9 @@ func (q *Query) GetAllFundRequests(adminId string) (*[]structures.GetFundRequest
 			&fr.RequesterName,     // requester_name
 			&fr.RequesterType,     // requester_type
 			&fr.Amount,            // amount
-			&fr.BankName,          // bank_name
-			&fr.AccountNumber,     // account_number
-			&fr.IFSCCode,          // ifsc_code
-			&fr.BankBranch,        // bank_branch
+			&fr.BankName,       // bank_branch
 			&fr.UTRNumber,         // utr_number
+			&fr.RequestDate,
 			&fr.RequestStatus,     // request_status
 			&fr.Remarks,           // remarks
 		); err != nil {
@@ -166,9 +158,7 @@ func (q *Query) CreateFundRequest(req *structures.CreateFundRequestModel) error 
 			requester_type,
 			amount,
 			bank_name,
-			account_number,
-			ifsc_code,
-			bank_branch,
+			request_date,
 			utr_number,
 			remarks,
 			request_status
@@ -181,11 +171,9 @@ func (q *Query) CreateFundRequest(req *structures.CreateFundRequestModel) error 
 			$5,  -- requester_type
 			$6,  -- amount
 			$7,  -- bank_name
-			$8,  -- account_number
-			$9,  -- ifsc_code
-			$10, -- bank_branch
-			$11, -- utr_number
-			$12, -- remarks
+			$8, -- request date
+			$9, -- utr_number
+			$10, -- remarks
 			'PENDING'  -- default status for new requests
 		);
 	`
@@ -200,9 +188,7 @@ func (q *Query) CreateFundRequest(req *structures.CreateFundRequestModel) error 
 		req.RequesterType,     // $5
 		req.Amount,            // $6
 		req.BankName,          // $7
-		req.AccountNumber,     // $8
-		req.IFSCCode,          // $9
-		req.BankBranch,        // $10
+		req.RequestDate,
 		req.UTRNumber,         // $11
 		req.Remarks,           // $12
 	)
