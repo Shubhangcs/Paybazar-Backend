@@ -15,6 +15,15 @@ type UserRegistrationRequest struct {
 	UserEmail           string `json:"user_email" validate:"required,email"`
 	UserPassword        string `json:"user_password" validate:"required,passwordStrong"`
 	UserPhone           string `json:"user_phone" validate:"required,phoneIN"`
+
+	UserAadharNumber string `json:"user_aadhar_number" validate:"required"`
+	UserPanNumber    string `json:"user_pan_number" validate:"required"`
+	UserDateOfBirth  string `json:"user_date_of_birth" validate:"required"`
+	UserGender       string `json:"user_gender" validate:"required"`
+	UserCity         string `json:"user_city" validate:"required"`
+	UserState        string `json:"user_state" validate:"required"`
+	UserAddress      string `json:"user_address" validate:"required"`
+	UserPincode      string `json:"user_pincode" validate:"required"`
 }
 
 type UserAuthResponse struct {
@@ -65,6 +74,14 @@ type MasterDistributorRegisterRequest struct {
 	MasterDistributorEmail       string `json:"master_distributor_email" validate:"required,email"`
 	MasterDistributorPassword    string `json:"master_distributor_password" validate:"required,passwordStrong"`
 	MasterDistributorPhoneNumber string `json:"master_distributor_phone" validate:"required,phoneIN"`
+	MasterDistributorAadharNumber string `json:"master_distributor_aadhar_number" validate:"required"`
+	MasterDistributorPanNumber    string `json:"master_distributor_pan_number" validate:"required"`
+	MasterDistributorDateOfBirth  string `json:"master_distributor_date_of_birth" validate:"required"`
+	MasterDistributorGender       string `json:"master_distributor_gender" validate:"required"`
+	MasterDistributorCity         string `json:"master_distributor_city" validate:"required"`
+	MasterDistributorState        string `json:"master_distributor_state" validate:"required"`
+	MasterDistributorAddress      string `json:"master_distributor_address" validate:"required"`
+	MasterDistributorPincode      string `json:"master_distributor_pincode" validate:"required"`
 }
 
 type MasterDistributorAuthResponse struct {
@@ -88,6 +105,15 @@ type DistributorRegisterRequest struct {
 	DistributorEmail    string `json:"distributor_email" validate:"required,email"`
 	DistributorPassword string `json:"distributor_password" validate:"required,passwordStrong"`
 	DistributorPhone    string `json:"distributor_phone" validate:"required,phoneIN"`
+
+	DistributorAadharNumber string `json:"distributor_aadhar_number" validate:"required"`
+	DistributorPanNumber    string `json:"distributor_pan_number" validate:"required"`
+	DistributorDateOfBirth  string `json:"distributor_date_of_birth" validate:"required"`
+	DistributorGender       string `json:"distributor_gender" validate:"required"`
+	DistributorCity         string `json:"distributor_city" validate:"required"`
+	DistributorState        string `json:"distributor_state" validate:"required"`
+	DistributorAddress      string `json:"distributor_address" validate:"required"`
+	DistributorPincode      string `json:"distributor_pincode" validate:"required"`
 }
 
 type DistributorAuthResponse struct {
@@ -97,7 +123,6 @@ type DistributorAuthResponse struct {
 	MasterDistributorID string `json:"master_distributor_id" validate:"required,uuid4"`
 	AdminID             string `json:"admin_id" validate:"required,uuid4"`
 }
-
 
 type GetUserProfile struct {
 	UserID           string `json:"user_id"`

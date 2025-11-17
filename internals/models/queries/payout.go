@@ -185,10 +185,10 @@ func (q *Query) PayoutSuccess(req *structures.PayoutApiSuccessResponse) error {
 	// 4) Deduct amount from user wallet
 	_, err = tx.Exec(ctx, `
 		UPDATE users
-		SET user_wallet_balance = user_wallet_balance - $1::numeric,
+		SET user_wallet_balance = user_wallet_balance - $1::numeric - $3::numeric,
 		    updated_at = NOW()
 		WHERE user_id = $2
-	`, amountStr, userID)
+	`, amountStr, userID , commissionStr)
 	if err != nil {
 		return fmt.Errorf("deduct user wallet: %w", err)
 	}
@@ -219,12 +219,12 @@ func (q *Query) PayoutSuccess(req *structures.PayoutApiSuccessResponse) error {
 			'USER',
 			'DEBIT',
 			'PAYOUT',
-			$3::numeric,
+			$3::numeric + $5::numeric,
 			'SUCCESS',
 			('Payout processed | payout_id=' || $4::text),
 			NOW()
 		)
-	`, userID, userName, amountStr, req.PartnerRequestID)
+	`, userID, userName, amountStr, req.PartnerRequestID , commissionStr)
 	if err != nil {
 		return fmt.Errorf("insert payout transaction: %w", err)
 	}

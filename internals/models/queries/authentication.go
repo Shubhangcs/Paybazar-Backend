@@ -18,10 +18,7 @@ func (q *Query) CreateAdmin(req *structures.AdminRegisterRequest) (*structures.A
 			admin_password
 		)
 		VALUES (
-			$1,  -- admin_name
-			$2,  -- admin_phone
-			$3,  -- admin_email
-			$4   -- hashed password passed directly
+			$1, $2, $3, $4
 		)
 		RETURNING admin_id, admin_unique_id, admin_name;
 	`
@@ -47,14 +44,20 @@ func (q *Query) CreateMasterDistributor(req *structures.MasterDistributorRegiste
 			master_distributor_name,
 			master_distributor_phone,
 			master_distributor_email,
-			master_distributor_password
+			master_distributor_password,
+			master_distributor_aadhar_number,
+			master_distributor_pan_number,
+			master_distributor_date_of_birth,
+			master_distributor_gender,
+			master_distributor_city,
+			master_distributor_state,
+			master_distributor_address,
+			master_distributor_pincode
 		)
 		VALUES (
-			$1,  -- admin_id
-			$2,  -- master_distributor_name
-			$3,  -- master_distributor_phone
-			$4,  -- master_distributor_email
-			$5   -- hashed password passed directly
+			$1, $2, $3, $4, $5,
+			$6, $7, $8, $9,
+			$10, $11, $12, $13
 		)
 		RETURNING 
 			master_distributor_id,
@@ -71,6 +74,14 @@ func (q *Query) CreateMasterDistributor(req *structures.MasterDistributorRegiste
 		req.MasterDistributorPhoneNumber,
 		req.MasterDistributorEmail,
 		req.MasterDistributorPassword,
+		req.MasterDistributorAadharNumber,
+		req.MasterDistributorPanNumber,
+		req.MasterDistributorDateOfBirth,
+		req.MasterDistributorGender,
+		req.MasterDistributorCity,
+		req.MasterDistributorState,
+		req.MasterDistributorAddress,
+		req.MasterDistributorPincode,
 	).Scan(
 		&res.MasterDistributorID,
 		&res.MasterDistributorUniqueID,
@@ -91,15 +102,20 @@ func (q *Query) CreateDistributor(req *structures.DistributorRegisterRequest) (*
 			distributor_name,
 			distributor_phone,
 			distributor_email,
-			distributor_password
+			distributor_password,
+			distributor_aadhar_number,
+			distributor_pan_number,
+			distributor_date_of_birth,
+			distributor_gender,
+			distributor_city,
+			distributor_state,
+			distributor_address,
+			distributor_pincode
 		)
 		VALUES (
-			$1,  -- master_distributor_id
-			$2,  -- admin_id
-			$3,  -- distributor_name
-			$4,  -- distributor_phone
-			$5,  -- distributor_email
-			$6   -- hashed password passed directly
+			$1, $2, $3, $4, $5, $6,
+			$7, $8, $9, $10,
+			$11, $12, $13, $14
 		)
 		RETURNING 
 			distributor_id,
@@ -112,12 +128,20 @@ func (q *Query) CreateDistributor(req *structures.DistributorRegisterRequest) (*
 	err := q.Pool.QueryRow(
 		context.Background(),
 		query,
-		req.MasterDistributorID, // $1
-		req.AdminID,             // $2
-		req.DistributorName,     // $3
-		req.DistributorPhone,    // $4
-		req.DistributorEmail,    // $5
-		req.DistributorPassword, // $6
+		req.MasterDistributorID,      // $1
+		req.AdminID,                  // $2
+		req.DistributorName,          // $3
+		req.DistributorPhone,         // $4
+		req.DistributorEmail,         // $5
+		req.DistributorPassword,      // $6
+		req.DistributorAadharNumber,  // $7
+		req.DistributorPanNumber,     // $8
+		req.DistributorDateOfBirth,   // $9
+		req.DistributorGender,        // $10
+		req.DistributorCity,          // $11
+		req.DistributorState,         // $12
+		req.DistributorAddress,       // $13
+		req.DistributorPincode,       // $14
 	).Scan(
 		&res.DistributorID,
 		&res.DistributorUniqueID,
@@ -140,16 +164,20 @@ func (q *Query) CreateUser(req *structures.UserRegistrationRequest) (*structures
 			user_name,
 			user_phone,
 			user_email,
-			user_password
+			user_password,
+			user_aadhar_number,
+			user_pan_number,
+			user_date_of_birth,
+			user_gender,
+			user_city,
+			user_state,
+			user_address,
+			user_pincode
 		)
 		VALUES (
-			$1,  -- admin_id
-			$2,  -- master_distributor_id
-			$3,  -- distributor_id
-			$4,  -- user_name
-			$5,  -- user_phone
-			$6,  -- user_email
-			$7   -- hashed password passed directly
+			$1, $2, $3, $4, $5, $6, $7,
+			$8, $9, $10, $11,
+			$12, $13, $14, $15
 		)
 		RETURNING 
 			user_id,
@@ -163,13 +191,21 @@ func (q *Query) CreateUser(req *structures.UserRegistrationRequest) (*structures
 	err := q.Pool.QueryRow(
 		context.Background(),
 		query,
-		req.AdminID,             // $1
-		req.MasterDistributorID, // $2
-		req.DistributorID,       // $3
-		req.UserName,            // $4
-		req.UserPhone,           // $5
-		req.UserEmail,           // $6
-		req.UserPassword,        // $7
+		req.AdminID,              // $1
+		req.MasterDistributorID,  // $2
+		req.DistributorID,        // $3
+		req.UserName,             // $4
+		req.UserPhone,            // $5
+		req.UserEmail,            // $6
+		req.UserPassword,         // $7
+		req.UserAadharNumber,     // $8
+		req.UserPanNumber,        // $9
+		req.UserDateOfBirth,      // $10
+		req.UserGender,           // $11
+		req.UserCity,             // $12
+		req.UserState,            // $13
+		req.UserAddress,          // $14
+		req.UserPincode,          // $15
 	).Scan(
 		&res.UserID,
 		&res.UserUniqueID,
@@ -181,6 +217,7 @@ func (q *Query) CreateUser(req *structures.UserRegistrationRequest) (*structures
 
 	return &res, err
 }
+
 
 func (q *Query) GetAdminPassword(email string) (string, error) {
 	var password string
