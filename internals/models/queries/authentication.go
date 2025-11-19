@@ -52,12 +52,16 @@ func (q *Query) CreateMasterDistributor(req *structures.MasterDistributorRegiste
 			master_distributor_city,
 			master_distributor_state,
 			master_distributor_address,
-			master_distributor_pincode
+			master_distributor_pincode,
+			business_name,
+			business_type,
+			gst_number
 		)
 		VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7, $8, $9,
-			$10, $11, $12, $13
+			$10, $11, $12, $13,
+			$14, $15, $16
 		)
 		RETURNING 
 			master_distributor_id,
@@ -82,6 +86,9 @@ func (q *Query) CreateMasterDistributor(req *structures.MasterDistributorRegiste
 		req.MasterDistributorState,
 		req.MasterDistributorAddress,
 		req.MasterDistributorPincode,
+		req.BusinessName,
+		req.BusinessType,
+		req.GSTNumber,
 	).Scan(
 		&res.MasterDistributorID,
 		&res.MasterDistributorUniqueID,
@@ -110,12 +117,16 @@ func (q *Query) CreateDistributor(req *structures.DistributorRegisterRequest) (*
 			distributor_city,
 			distributor_state,
 			distributor_address,
-			distributor_pincode
+			distributor_pincode,
+			business_name,
+			business_type,
+			gst_number
 		)
 		VALUES (
 			$1, $2, $3, $4, $5, $6,
 			$7, $8, $9, $10,
-			$11, $12, $13, $14
+			$11, $12, $13, $14,
+			$15, $16, $17
 		)
 		RETURNING 
 			distributor_id,
@@ -142,6 +153,9 @@ func (q *Query) CreateDistributor(req *structures.DistributorRegisterRequest) (*
 		req.DistributorState,         // $12
 		req.DistributorAddress,       // $13
 		req.DistributorPincode,       // $14
+		req.BusinessName,
+		req.BusinessType,
+		req.GSTNumber,
 	).Scan(
 		&res.DistributorID,
 		&res.DistributorUniqueID,
@@ -172,12 +186,16 @@ func (q *Query) CreateUser(req *structures.UserRegistrationRequest) (*structures
 			user_city,
 			user_state,
 			user_address,
-			user_pincode
+			user_pincode,
+			business_name,
+			business_type,
+			gst_number
 		)
 		VALUES (
 			$1, $2, $3, $4, $5, $6, $7,
 			$8, $9, $10, $11,
-			$12, $13, $14, $15
+			$12, $13, $14, $15,
+			$16, $17, $18
 		)
 		RETURNING 
 			user_id,
@@ -206,6 +224,9 @@ func (q *Query) CreateUser(req *structures.UserRegistrationRequest) (*structures
 		req.UserState,            // $13
 		req.UserAddress,          // $14
 		req.UserPincode,          // $15
+		req.BusinessName,
+		req.BusinessType,
+		req.GSTNumber,
 	).Scan(
 		&res.UserID,
 		&res.UserUniqueID,

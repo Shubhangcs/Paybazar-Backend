@@ -171,6 +171,7 @@ func (r *Routes) UserRoutes(rg *echo.Group) {
 	)
 	var payoutHandler = handlers.NewPayoutHandler(payoutRepo)
 	rg.POST("/payout", payoutHandler.PayoutRequest)
+	rg.GET("/payout/get/transactions/:user_id", payoutHandler.GetPayoutTransactionRequest)
 
 	// Bank Requests
 	var bankRepo = repositories.NewBankRepo(r.Query)

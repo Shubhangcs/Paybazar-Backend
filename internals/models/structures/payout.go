@@ -51,6 +51,18 @@ type PayoutApiSuccessResponse struct {
 	PartnerRequestID      string `json:"partnerreqid"`
 }
 
+type GetPayoutLogs struct {
+	TransactionID          string `json:"transaction_id"`
+	PhoneNumber            string `json:"phone_number"`
+	BankName               string `json:"bank_name"`
+	BeneficiaryName        string `json:"beneficiary_name"`
+	Amount                 string `json:"amount"`
+	Commission             string `json:"commission"`
+	TransferType           string `json:"transfer_type"`
+	TransactionStatus      string `json:"transaction_status"`
+	TransactionDateAndTime string `json:"transaction_date_and_time"`
+}
+
 type PayoutApiFailureResponse struct {
 	Error               int    `json:"error"`
 	Message             string `json:"message"`

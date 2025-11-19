@@ -3,6 +3,7 @@ package repositories
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -52,7 +53,7 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 	}
 
 	// Check User Balance
-	hasBalance, err := pr.query.CheckUserBalance(req.UserID, req.Amount , req.Commission)
+	hasBalance, err := pr.query.CheckUserBalance(req.UserID, req.Amount, req.Commission)
 	if err != nil {
 		log.Println("DB check user balance error:", err)
 		return "", echo.NewHTTPError(500, "Failed to verify wallet balance")
@@ -176,4 +177,14 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 	}
 
 	return "Transaction successful", nil
+}
+
+func (pr *payoutRepo) GetPayoutTransactions(e echo.Context) (*[]structures.GetPayoutLogs, error) {
+	var userId = e.Param("user_id")
+	res, err := pr.query.GetPayoutTransactions(userId)
+	if err != nil {
+		log.Println(err)
+		return nil, fmt.Errorf("failed to fetch payout transactions")
+	}
+	return res, nil
 }

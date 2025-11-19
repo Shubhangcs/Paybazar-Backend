@@ -21,21 +21,21 @@ FROM
 WHERE 
     user_id = $1;
 `
-	err := q.Pool.QueryRow(context.Background(), query, userId, amount,commission).Scan(&hasBalance)
+	err := q.Pool.QueryRow(context.Background(), query, userId, amount, commission).Scan(&hasBalance)
 	return hasBalance, err
 }
 
 // func (q *Query) CheckPayoutLimit(userId string, amount string) (bool, error) {
 // 	var hasPayoutLimit bool
 // 	query := `
-// 	SELECT 
-//     CASE 
-//         WHEN COALESCE(SUM(amount), 0) + $2::numeric <= 25000 THEN TRUE 
-//         ELSE FALSE 
+// 	SELECT
+//     CASE
+//         WHEN COALESCE(SUM(amount), 0) + $2::numeric <= 25000 THEN TRUE
+//         ELSE FALSE
 //     END AS within_limit
-// FROM 
+// FROM
 //     payout_service
-// WHERE 
+// WHERE
 //     user_id = $1
 //     AND transaction_status = 'SUCCESS'
 //     AND created_at::date = CURRENT_DATE;
@@ -44,14 +44,12 @@ WHERE
 // 	return hasPayoutLimit, err
 // }
 
-
 func (q *Query) CheckMpin(userID string, mpin string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM users WHERE user_id = $1 AND user_mpin = $2)`
 	var hasMpin bool
 	err := q.Pool.QueryRow(context.Background(), query, userID, mpin).Scan(&hasMpin)
 	return hasMpin, err
 }
-
 
 func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationRequest) (*structures.PayoutApiRequest, error) {
 	const query = `
@@ -188,7 +186,7 @@ func (q *Query) PayoutSuccess(req *structures.PayoutApiSuccessResponse) error {
 		SET user_wallet_balance = user_wallet_balance - $1::numeric - $3::numeric,
 		    updated_at = NOW()
 		WHERE user_id = $2
-	`, amountStr, userID , commissionStr)
+	`, amountStr, userID, commissionStr)
 	if err != nil {
 		return fmt.Errorf("deduct user wallet: %w", err)
 	}
@@ -224,7 +222,7 @@ func (q *Query) PayoutSuccess(req *structures.PayoutApiSuccessResponse) error {
 			('Payout processed | payout_id=' || $4::text),
 			NOW()
 		)
-	`, userID, userName, amountStr, req.PartnerRequestID , commissionStr)
+	`, userID, userName, amountStr, req.PartnerRequestID, commissionStr)
 	if err != nil {
 		return fmt.Errorf("insert payout transaction: %w", err)
 	}
@@ -477,8 +475,8 @@ func (q *Query) PayoutFailure(req *structures.PayoutApiFailureResponse) error {
 
 	// 1) Lock payout_service row and read required fields (only if PENDING)
 	var (
-		userID       string
-		amountStr    string
+		userID        string
+		amountStr     string
 		currentStatus string
 	)
 	err = tx.QueryRow(ctx, `
@@ -558,3 +556,41 @@ func (q *Query) PayoutFailure(req *structures.PayoutApiFailureResponse) error {
 	return nil
 }
 
+func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLogs, error) {
+	query := `
+		SELECT operator_transaction_id, mobile_number,
+		bank_name, beneficiary_name, amount, commision,
+		transfer_type, transaction_status, created_at::text
+		FROM payout_service
+		WHERE user_id=$1;
+	`
+	res, err := q.Pool.Query(context.Background(), query, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	var payoutTransactions []structures.GetPayoutLogs
+	for res.Next() {
+		var payoutTransaction structures.GetPayoutLogs
+		if err := res.Scan(
+			&payoutTransaction.TransactionID,
+			&payoutTransaction.PhoneNumber,
+			&payoutTransaction.BankName,
+			&payoutTransaction.BeneficiaryName,
+			&payoutTransaction.Amount,
+			&payoutTransaction.Commission,
+			&payoutTransaction.TransferType,
+			&payoutTransaction.TransactionStatus,
+			&payoutTransaction.TransactionDateAndTime,
+		); err != nil {
+			return nil, err
+		}
+
+		payoutTransactions = append(payoutTransactions, payoutTransaction)
+	}
+	if err := res.Err(); err != nil {
+		return nil, err
+	}
+	return &payoutTransactions, nil
+}
