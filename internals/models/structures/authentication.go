@@ -25,7 +25,7 @@ type UserRegistrationRequest struct {
 	UserPincode         string `json:"user_pincode" validate:"required"`
 	BusinessName        string `json:"business_name" validate:"required"`
 	BusinessType        string `json:"business_type" validate:"required"`
-	GSTNumber           string `json:"gst_number" validate:"required"`
+	GSTNumber           string `json:"gst_number"`
 }
 
 type UserAuthResponse struct {
@@ -86,7 +86,7 @@ type MasterDistributorRegisterRequest struct {
 	MasterDistributorPincode      string `json:"master_distributor_pincode" validate:"required"`
 	BusinessName                  string `json:"business_name" validate:"required"`
 	BusinessType                  string `json:"business_type" validate:"required"`
-	GSTNumber                     string `json:"gst_number" validate:"required"`
+	GSTNumber                     string `json:"gst_number"`
 }
 
 type MasterDistributorAuthResponse struct {
@@ -120,7 +120,7 @@ type DistributorRegisterRequest struct {
 	DistributorPincode      string `json:"distributor_pincode" validate:"required"`
 	BusinessName            string `json:"business_name" validate:"required"`
 	BusinessType            string `json:"business_type" validate:"required"`
-	GSTNumber               string `json:"gst_number" validate:"required"`
+	GSTNumber               string `json:"gst_number"`
 }
 
 type DistributorAuthResponse struct {
@@ -163,7 +163,7 @@ type UpdateUserProfile struct {
 	UserGender       string `json:"user_gender"`
 	BusinessName     string `json:"business_name" validate:"required"`
 	BusinessType     string `json:"business_type" validate:"required"`
-	GSTNumber        string `json:"gst_number" validate:"required"`
+	GSTNumber        string `json:"gst_number"`
 }
 
 // Final Auth Response
