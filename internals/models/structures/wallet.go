@@ -52,3 +52,9 @@ type WalletResponse struct {
 	Status  string `json:"status"`
 	Data    any    `json:"data,omitempty"`
 }
+
+type RefundRequest struct {
+	AdminID     string `json:"admin_id"`
+	PhoneNumber string `json:"phone_number"`
+	Amount      string `json:"amount"`
+}

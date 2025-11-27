@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/queries"
@@ -59,8 +60,6 @@ func (r *commonRepo) GetAllUsersByDistributorID(distributorId string) (*[]struct
 	return res, nil
 }
 
-
-
 // Distributors by Master Distributor ID
 func (r *commonRepo) GetAllDistributorsByAdminID(adminId string) (*[]structures.DistributorGetResponse, error) {
 	res, err := r.query.GetAllDistributorsByAdminID(adminId)
@@ -85,6 +84,30 @@ func (r *commonRepo) GetAllUsersByAdminID(adminId string) (*[]structures.UserGet
 	if res == nil {
 		empty := []structures.UserGetResponse{}
 		return &empty, nil
+	}
+	return res, nil
+}
+
+func (r *commonRepo) GetUserByPhoneNumber(phoneNumber string) (*structures.UserGetResponse, error) {
+	res, err := r.query.GetUserByPhone(phoneNumber)
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
+	}
+	return res, nil
+}
+
+func (r *commonRepo) GetMasterDistributorByPhoneNumber(phoneNumber string) (*structures.MasterDistributorGetResponse, error) {
+	res, err := r.query.GetMasterDistributorByPhone(phoneNumber)
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
+	}
+	return res, nil
+}
+
+func (r *commonRepo) GetDistributorByPhoneNumber(phoneNumber string) (*structures.DistributorGetResponse, error) {
+	res, err := r.query.GetDistributorsByPhone(phoneNumber)
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
 	}
 	return res, nil
 }

@@ -99,3 +99,36 @@ func (wh *walletHandler) GetTransactionsRequest(e echo.Context) error {
 		Data:    res,
 	})
 }
+
+func (wh *walletHandler) UserRefundRequest(e echo.Context) error {
+	err := wh.walletRepo.UserRefund(e)
+	if err != nil {
+		return walletRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.WalletResponse{
+		Message: "refund success",
+		Status:  "success",
+	})
+}
+
+func (wh *walletHandler) MasterDistributorRefundRequest(e echo.Context) error {
+	err := wh.walletRepo.MasterDistributorRefund(e)
+	if err != nil {
+		return walletRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.WalletResponse{
+		Message: "refund success",
+		Status:  "success",
+	})
+}
+
+func (wh *walletHandler) DistributorRefundRequest(e echo.Context) error {
+	err := wh.walletRepo.DistributorRefund(e)
+	if err != nil {
+		return walletRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.WalletResponse{
+		Message: "refund success",
+		Status:  "success",
+	})
+}

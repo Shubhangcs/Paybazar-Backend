@@ -74,6 +74,7 @@ func (q *Query) GetMasterDistributorWalletBalance(masterDistributorId string) (s
 	err := q.Pool.QueryRow(context.Background(), query, masterDistributorId).Scan(&balance)
 	return balance, err
 }
+
 // Distributor Wallet Function
 
 func (q *Query) GetDistributorWalletBalance(distributorId string) (string, error) {
@@ -82,7 +83,6 @@ func (q *Query) GetDistributorWalletBalance(distributorId string) (string, error
 	err := q.Pool.QueryRow(context.Background(), query, distributorId).Scan(&balance)
 	return balance, err
 }
-
 
 // User Wallet Function
 
@@ -153,4 +153,79 @@ func (q *Query) GetTransactions(userId string) (*[]structures.WalletTransaction,
 	}
 
 	return &transactions, nil
+}
+
+func (q *Query) UserRefund(req *structures.RefundRequest) error {
+	updateUserWalletBalanceQuery := `
+		UPDATE users SET user_wallet_balance = user_wallet_balance - $1::NUMERIC WHERE user_phone=$2 AND user_wallet_balance >= $1::NUMERIC
+	`
+	updateAdminWalletBalanceQuery := `
+		UPDATE admin SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
+	`
+
+	tx, err := q.Pool.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+	defer func() { tx.Rollback(context.Background()) }()
+
+	if _, err := tx.Exec(context.Background(), updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(context.Background(), updateAdminWalletBalanceQuery, req.Amount, req.AdminID); err != nil {
+		return err
+	}
+
+	return tx.Commit(context.Background())
+}
+
+func (q *Query) MasterDistributorRefund(req *structures.RefundRequest) error {
+	updateMdWalletBalanceQuery := `
+		UPDATE master_distributors SET master_distributor_wallet_balance = master_distributor_wallet_balance - $1::NUMERIC WHERE master_distributor_phone=$2 AND master_distributor_wallet_balance >= $1::NUMERIC
+	`
+	updateAdminWalletBalanceQuery := `
+		UPDATE admin SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
+	`
+
+	tx, err := q.Pool.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+	defer func() { tx.Rollback(context.Background()) }()
+
+	if _, err := tx.Exec(context.Background(), updateMdWalletBalanceQuery, req.Amount, req.PhoneNumber); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(context.Background(), updateAdminWalletBalanceQuery, req.Amount, req.AdminID); err != nil {
+		return err
+	}
+
+	return tx.Commit(context.Background())
+}
+
+func (q *Query) DistributorRefund(req *structures.RefundRequest) error  {
+	updateMdWalletBalanceQuery := `
+		UPDATE distributors SET distributor_wallet_balance = distributor_wallet_balance - $1::NUMERIC WHERE distributor_phone=$2 AND distributor_wallet_balance >= $1::NUMERIC
+	`
+	updateAdminWalletBalanceQuery := `
+		UPDATE admin SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
+	`
+
+	tx, err := q.Pool.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+	defer func() { tx.Rollback(context.Background()) }()
+
+	if _, err := tx.Exec(context.Background(), updateMdWalletBalanceQuery, req.Amount, req.PhoneNumber); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(context.Background(), updateAdminWalletBalanceQuery, req.Amount, req.AdminID); err != nil {
+		return err
+	}
+
+	return tx.Commit(context.Background())
 }

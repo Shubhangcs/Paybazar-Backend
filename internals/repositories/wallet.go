@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/queries"
@@ -120,4 +121,37 @@ func (wr *walletRepo) GetTransactions(e echo.Context) (*[]structures.WalletTrans
 		return &empty, nil
 	}
 	return res, nil
+}
+
+func (wr *walletRepo) UserRefund(e echo.Context) error {
+	var req structures.RefundRequest
+	if err := wr.bindAndValidate(e, &req); err != nil {
+		return err
+	}
+	if err := wr.query.UserRefund(&req); err != nil {
+		return fmt.Errorf("low balance")
+	}
+	return nil
+}
+
+func (wr *walletRepo) MasterDistributorRefund(e echo.Context) error {
+	var req structures.RefundRequest
+	if err := wr.bindAndValidate(e, &req); err != nil {
+		return err
+	}
+	if err := wr.query.MasterDistributorRefund(&req); err != nil {
+		return fmt.Errorf("low balance")
+	}
+	return nil
+}
+
+func (wr *walletRepo) DistributorRefund(e echo.Context) error {
+	var req structures.RefundRequest
+	if err := wr.bindAndValidate(e, &req); err != nil {
+		return err
+	}
+	if err := wr.query.DistributorRefund(&req); err != nil {
+		return fmt.Errorf("low balance")
+	}
+	return nil
 }

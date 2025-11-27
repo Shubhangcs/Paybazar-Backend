@@ -59,6 +59,9 @@ func (r *Routes) AdminRoutes(rg *echo.Group) {
 	rg.GET("/wallet/get/balance/:admin_id", walletHandler.GetAdminWalletBalanceRequest)
 	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
 	rg.POST("/wallet/topup", walletHandler.AdminWalletTopupRequest)
+	rg.POST("/user/wallet/refund" , walletHandler.UserRefundRequest)
+	rg.POST("/md/wallet/refund" , walletHandler.MasterDistributorRefundRequest)
+	rg.POST("/distributor/wallet/refund" , walletHandler.DistributorRefundRequest)
 
 	// Common Request
 	var commonRepo = repositories.NewCommonRepository(
@@ -70,6 +73,9 @@ func (r *Routes) AdminRoutes(rg *echo.Group) {
 	rg.GET("/get/users/:distributor_id" , commonHandler.GetAllUsersByDistributorID)
 	rg.GET("/get/distributor/:admin_id" , commonHandler.GetAllDistributorsByAdminID)
 	rg.GET("/get/user/:admin_id" , commonHandler.GetAllUsersByAdminID)
+	rg.GET("/get/user/phone/:phone" , commonHandler.GetUserByPhone)
+	rg.GET("/get/md/phone/:phone" , commonHandler.GetMasterDistributorByPhone)
+	rg.GET("/get/distributor/phone/:phone", commonHandler.GetDistributorByPhone)
 
 	// Ticket Requests
 	var ticketRepo = repositories.NewTicketRepo(r.Query)

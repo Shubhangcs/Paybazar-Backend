@@ -12,4 +12,7 @@ type WalletInterface interface {
 	GetUserWalletBalance(echo.Context) (string, error)
 	AdminWalletTopup(echo.Context) (string, error)
 	GetTransactions(echo.Context) (*[]structures.WalletTransaction, error)
+	DistributorRefund(echo.Context) error
+	MasterDistributorRefund(echo.Context) error
+	UserRefund(echo.Context) error
 }

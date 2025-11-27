@@ -155,7 +155,6 @@ func (q *Query) GetAllUsersByDistributorID(distributorId string) (*[]structures.
 	return &out, nil
 }
 
-
 func (q *Query) GetAllUsersByAdminID(adminId string) (*[]structures.UserGetResponse, error) {
 	const query = `
 		SELECT
@@ -205,8 +204,6 @@ func (q *Query) GetAllUsersByAdminID(adminId string) (*[]structures.UserGetRespo
 	return &out, nil
 }
 
-
-
 func (q *Query) GetAllDistributorsByAdminID(adminId string) (*[]structures.DistributorGetResponse, error) {
 	const query = `
 		SELECT
@@ -254,4 +251,90 @@ func (q *Query) GetAllDistributorsByAdminID(adminId string) (*[]structures.Distr
 	}
 
 	return &out, nil
+}
+
+func (q *Query) GetUserByPhone(phoneNumber string) (*structures.UserGetResponse, error) {
+	var res structures.UserGetResponse
+	query := `
+		SELECT
+			user_id,
+			user_unique_id,
+			user_name,
+			user_email,
+			user_phone,
+			user_wallet_balance
+		FROM
+			users
+		WHERE
+			user_phone = $1
+		ORDER BY
+			created_at DESC;
+	`
+	err := q.Pool.QueryRow(context.Background(), query, phoneNumber).Scan(
+		&res.UserID,
+		&res.UserUniqueID,
+		&res.UserName,
+		&res.UserEmail,
+		&res.UserPhone,
+		&res.UserWalletBalance,
+	)
+	return &res, err
+}
+
+func (q *Query) GetMasterDistributorByPhone(phoneNumber string) (*structures.MasterDistributorGetResponse, error) {
+	var res structures.MasterDistributorGetResponse
+	const query = `
+		SELECT 
+			master_distributor_id,
+			master_distributor_unique_id,
+			master_distributor_name,
+			master_distributor_email,
+			master_distributor_phone,
+			master_distributor_wallet_balance
+		FROM 
+			master_distributors
+		WHERE 
+			master_distributor_phone=$1
+		ORDER BY 
+			created_at DESC;
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	err := q.Pool.QueryRow(ctx, query, phoneNumber).Scan(
+		&res.MasterDistributorID,
+		&res.MasterDistributorUniqueID,
+		&res.MasterDistributorName,
+		&res.MasterDistributorEmail,
+		&res.MasterDistributorPhone,
+		&res.MasterDistributorWalletBalance,
+	)
+	return &res, err
+}
+
+func (q *Query) GetDistributorsByPhone(phoneNumber string) (*structures.DistributorGetResponse, error) {
+	var res structures.DistributorGetResponse
+	const query = `
+		SELECT
+			distributor_id,
+			distributor_unique_id,
+			distributor_name,
+			distributor_email,
+			distributor_phone,
+			distributor_wallet_balance
+		FROM
+			distributors
+		WHERE
+			distributor_phone=$1;
+	`
+	err := q.Pool.QueryRow(context.Background(), query, phoneNumber).Scan(
+		&res.DistributorID,
+		&res.DistributorUniqueID,
+		&res.DistributorName,
+		&res.DistributorEmail,
+		&res.DistributorPhone,
+		&res.DistributorWalletBalance,
+	)
+	return &res, err
 }

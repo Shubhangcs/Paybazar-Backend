@@ -234,7 +234,7 @@ func (q *Query) PayoutSuccess(req *structures.PayoutApiSuccessResponse) error {
 	if adminID != nil && *adminID != "" {
 		// credit admin wallet
 		_, err = tx.Exec(ctx, `
-			WITH share AS (SELECT ($1::numeric * 0.25)::numeric AS amt)
+			WITH share AS (SELECT ($1::numeric * 0.2917)::numeric AS amt)
 			UPDATE admins
 			SET admin_wallet_balance = admin_wallet_balance + (SELECT amt FROM share),
 			    updated_at = NOW()
@@ -277,7 +277,7 @@ func (q *Query) PayoutSuccess(req *structures.PayoutApiSuccessResponse) error {
 				'ADMIN',
 				'CREDIT',
 				'PAYOUT',
-				($3::numeric * 0.25)::numeric,
+				($3::numeric * 0.2917)::numeric,
 				'SUCCESS',
 				('Payout commission credited to admin | payout_id=' || $4::text),
 				NOW()
@@ -291,7 +291,7 @@ func (q *Query) PayoutSuccess(req *structures.PayoutApiSuccessResponse) error {
 	// b) Distributor share (if distributor exists)
 	if distributorID != nil && *distributorID != "" {
 		_, err = tx.Exec(ctx, `
-			WITH share AS (SELECT ($1::numeric * 0.20)::numeric AS amt)
+			WITH share AS (SELECT ($1::numeric * 0.1667)::numeric AS amt)
 			UPDATE distributors
 			SET distributor_wallet_balance = distributor_wallet_balance + (SELECT amt FROM share),
 			    updated_at = NOW()
@@ -331,7 +331,7 @@ func (q *Query) PayoutSuccess(req *structures.PayoutApiSuccessResponse) error {
 				'DISTRIBUTOR',
 				'CREDIT',
 				'PAYOUT',
-				($3::numeric * 0.20)::numeric,
+				($3::numeric * 0.1667)::numeric,
 				'SUCCESS',
 				('Payout commission credited to distributor | payout_id=' || $4::text),
 				NOW()
@@ -345,7 +345,7 @@ func (q *Query) PayoutSuccess(req *structures.PayoutApiSuccessResponse) error {
 	// c) Master distributor share (if exists)
 	if masterDistributorID != nil && *masterDistributorID != "" {
 		_, err = tx.Exec(ctx, `
-			WITH share AS (SELECT ($1::numeric * 0.05)::numeric AS amt)
+			WITH share AS (SELECT ($1::numeric * 0.0417)::numeric AS amt)
 			UPDATE master_distributors
 			SET master_distributor_wallet_balance = master_distributor_wallet_balance + (SELECT amt FROM share),
 			    updated_at = NOW()
@@ -385,7 +385,7 @@ func (q *Query) PayoutSuccess(req *structures.PayoutApiSuccessResponse) error {
 				'MASTER_DISTRIBUTOR',
 				'CREDIT',
 				'PAYOUT',
-				($3::numeric * 0.05)::numeric,
+				($3::numeric * 0.0417)::numeric,
 				'SUCCESS',
 				('Payout commission credited to master distributor | payout_id=' || $4::text),
 				NOW()

@@ -104,7 +104,6 @@ func (ch *commonHandler) GetAllUsersByDistributorID(e echo.Context) error {
 	})
 }
 
-
 // Get all distributors under a master distributor
 func (ch *commonHandler) GetAllDistributorsByAdminID(e echo.Context) error {
 	masterDistributorID := e.Param("admin_id")
@@ -146,6 +145,45 @@ func (ch *commonHandler) GetAllUsersByAdminID(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, structures.CommonResponse{
 		Message: "users fetched successfully",
+		Status:  "success",
+		Data:    res,
+	})
+}
+
+func (ch *commonHandler) GetUserByPhone(e echo.Context) error {
+	phone := e.Param("phone")
+	res, err := ch.commonRepo.GetUserByPhoneNumber(phone)
+	if err != nil {
+		return commonRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.CommonResponse{
+		Message: "user fetched successfully",
+		Status:  "success",
+		Data:    res,
+	})
+}
+
+func (ch *commonHandler) GetMasterDistributorByPhone(e echo.Context) error {
+	phone := e.Param("phone")
+	res, err := ch.commonRepo.GetMasterDistributorByPhoneNumber(phone)
+	if err != nil {
+		return commonRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.CommonResponse{
+		Message: "md fetched successfully",
+		Status:  "success",
+		Data:    res,
+	})
+}
+
+func (ch *commonHandler) GetDistributorByPhone(e echo.Context) error {
+	phone := e.Param("phone")
+	res, err := ch.commonRepo.GetDistributorByPhoneNumber(phone)
+	if err != nil {
+		return commonRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.CommonResponse{
+		Message: "distributor fetched successfully",
 		Status:  "success",
 		Data:    res,
 	})

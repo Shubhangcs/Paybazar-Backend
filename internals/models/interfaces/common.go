@@ -8,4 +8,7 @@ type CommonInterface interface {
 	GetAllUsersByDistributorID(distributorId string) (*[]structures.UserGetResponse, error)
 	GetAllDistributorsByAdminID(adminId string) (*[]structures.DistributorGetResponse, error)
 	GetAllUsersByAdminID(adminId string) (*[]structures.UserGetResponse, error)
+	GetUserByPhoneNumber(string) (*structures.UserGetResponse, error)
+	GetMasterDistributorByPhoneNumber(string) (*structures.MasterDistributorGetResponse, error)
+	GetDistributorByPhoneNumber(string) (*structures.DistributorGetResponse, error)
 }
