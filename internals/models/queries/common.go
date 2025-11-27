@@ -69,7 +69,7 @@ func (q *Query) GetAllDistributorsByMasterDistributorID(masterDistributorId stri
 		FROM
 			distributors
 		WHERE
-			master_distributor_id = $1 AND AND distributor_email NOT IN ('query.gvinfotech@gmail.com')
+			master_distributor_id = $1 AND distributor_email NOT IN ('query.gvinfotech@gmail.com')
 		ORDER BY
 			created_at DESC;
 	`
@@ -118,7 +118,7 @@ func (q *Query) GetAllUsersByDistributorID(distributorId string) (*[]structures.
 		FROM
 			users
 		WHERE
-			distributor_id = $1 AND AND user_email NOT IN ('query.gvinfotech@gmail.com')
+			distributor_id = $1 AND user_email NOT IN ('query.gvinfotech@gmail.com')
 		ORDER BY
 			created_at DESC;
 	`
@@ -168,7 +168,7 @@ func (q *Query) GetAllUsersByAdminID(adminId string) (*[]structures.UserGetRespo
 		FROM
 			users
 		WHERE
-			admin_id = $1 AND AND user_email NOT IN ('query.gvinfotech@gmail.com')
+			admin_id = $1 AND user_email NOT IN ('query.gvinfotech@gmail.com')
 		ORDER BY
 			created_at DESC;
 	`
@@ -219,7 +219,7 @@ func (q *Query) GetAllDistributorsByAdminID(adminId string) (*[]structures.Distr
 		FROM
 			distributors
 		WHERE
-			admin_id = $1 AND AND distributor_email NOT IN ('query.gvinfotech@gmail.com')
+			admin_id = $1 AND distributor_email NOT IN ('query.gvinfotech@gmail.com')
 		ORDER BY
 			created_at DESC;
 	`
