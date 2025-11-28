@@ -161,8 +161,8 @@ type UpdateUserProfile struct {
 	UserPincode      string `json:"user_pincode"`
 	UserDateOfBirth  string `json:"user_date_of_birth"`
 	UserGender       string `json:"user_gender"`
-	BusinessName     string `json:"business_name" validate:"required"`
-	BusinessType     string `json:"business_type" validate:"required"`
+	BusinessName     string `json:"business_name"`
+	BusinessType     string `json:"business_type"`
 	GSTNumber        string `json:"gst_number"`
 }
 
