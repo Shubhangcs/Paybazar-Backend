@@ -560,7 +560,7 @@ func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLog
 	query := `
 		SELECT operator_transaction_id, mobile_number,
 		bank_name, beneficiary_name, amount, commision,
-		transfer_type, transaction_status, created_at::text
+		transfer_type, transaction_status, created_at::text, account_number
 		FROM payout_service
 		WHERE user_id=$1;
 	`
@@ -583,6 +583,7 @@ func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLog
 			&payoutTransaction.TransferType,
 			&payoutTransaction.TransactionStatus,
 			&payoutTransaction.TransactionDateAndTime,
+			&payoutTransaction.AccountNumber,
 		); err != nil {
 			return nil, err
 		}
