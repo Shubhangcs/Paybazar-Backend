@@ -157,75 +157,116 @@ func (q *Query) GetTransactions(userId string) (*[]structures.WalletTransaction,
 
 func (q *Query) UserRefund(req *structures.RefundRequest) error {
 	updateUserWalletBalanceQuery := `
-		UPDATE users SET user_wallet_balance = user_wallet_balance - $1::NUMERIC WHERE user_phone=$2 AND user_wallet_balance >= $1::NUMERIC
+		UPDATE users
+		SET user_wallet_balance = user_wallet_balance - $1::NUMERIC
+		WHERE user_phone = $2 AND user_wallet_balance >= $1::NUMERIC;
 	`
 	updateAdminWalletBalanceQuery := `
-		UPDATE admins SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
+		UPDATE admins
+		SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC
+		WHERE admin_id = $2;
 	`
 
-	tx, err := q.Pool.Begin(context.Background())
+	ctx := context.Background()
+
+	tx, err := q.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer func() { tx.Rollback(context.Background()) }()
+	defer tx.Rollback(ctx)
 
-	if _, err := tx.Exec(context.Background(), updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber); err != nil {
+	// 1. Deduct from user wallet
+	cmdTag, err := tx.Exec(ctx, updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber)
+	if err != nil {
 		return err
 	}
 
-	if _, err := tx.Exec(context.Background(), updateAdminWalletBalanceQuery, req.Amount, req.AdminID); err != nil {
+	if cmdTag.RowsAffected() == 0 {
+		// No row updated => user not found or insufficient balance
+		return fmt.Errorf("user refund failed: insufficient balance or user not found")
+	}
+
+	// 2. Credit admin wallet
+	if _, err := tx.Exec(ctx, updateAdminWalletBalanceQuery, req.Amount, req.AdminID); err != nil {
 		return err
 	}
 
-	return tx.Commit(context.Background())
+	// 3. Commit
+	return tx.Commit(ctx)
 }
 
 func (q *Query) MasterDistributorRefund(req *structures.RefundRequest) error {
 	updateMdWalletBalanceQuery := `
-		UPDATE master_distributors SET master_distributor_wallet_balance = master_distributor_wallet_balance - $1::NUMERIC WHERE master_distributor_phone=$2 AND master_distributor_wallet_balance >= $1::NUMERIC
+		UPDATE master_distributors
+		SET master_distributor_wallet_balance = master_distributor_wallet_balance - $1::NUMERIC
+		WHERE master_distributor_phone = $2 AND master_distributor_wallet_balance >= $1::NUMERIC;
 	`
 	updateAdminWalletBalanceQuery := `
-		UPDATE admins SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
+		UPDATE admins
+		SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC
+		WHERE admin_id = $2;
 	`
 
-	tx, err := q.Pool.Begin(context.Background())
+	ctx := context.Background()
+
+	tx, err := q.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer func() { tx.Rollback(context.Background()) }()
+	defer tx.Rollback(ctx)
 
-	if _, err := tx.Exec(context.Background(), updateMdWalletBalanceQuery, req.Amount, req.PhoneNumber); err != nil {
+	// 1. Deduct from MD wallet
+	cmdTag, err := tx.Exec(ctx, updateMdWalletBalanceQuery, req.Amount, req.PhoneNumber)
+	if err != nil {
 		return err
 	}
 
-	if _, err := tx.Exec(context.Background(), updateAdminWalletBalanceQuery, req.Amount, req.AdminID); err != nil {
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("master distributor refund failed: insufficient balance or MD not found")
+	}
+
+	// 2. Credit admin wallet
+	if _, err := tx.Exec(ctx, updateAdminWalletBalanceQuery, req.Amount, req.AdminID); err != nil {
 		return err
 	}
 
-	return tx.Commit(context.Background())
+	return tx.Commit(ctx)
 }
 
-func (q *Query) DistributorRefund(req *structures.RefundRequest) error  {
-	updateMdWalletBalanceQuery := `
-		UPDATE distributors SET distributor_wallet_balance = distributor_wallet_balance - $1::NUMERIC WHERE distributor_phone=$2 AND distributor_wallet_balance >= $1::NUMERIC
+func (q *Query) DistributorRefund(req *structures.RefundRequest) error {
+	updateDistributorWalletBalanceQuery := `
+		UPDATE distributors
+		SET distributor_wallet_balance = distributor_wallet_balance - $1::NUMERIC
+		WHERE distributor_phone = $2 AND distributor_wallet_balance >= $1::NUMERIC;
 	`
 	updateAdminWalletBalanceQuery := `
-		UPDATE admins SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
+		UPDATE admins
+		SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC
+		WHERE admin_id = $2;
 	`
 
-	tx, err := q.Pool.Begin(context.Background())
+	ctx := context.Background()
+
+	tx, err := q.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer func() { tx.Rollback(context.Background()) }()
+	defer tx.Rollback(ctx)
 
-	if _, err := tx.Exec(context.Background(), updateMdWalletBalanceQuery, req.Amount, req.PhoneNumber); err != nil {
+	// 1. Deduct from distributor wallet
+	cmdTag, err := tx.Exec(ctx, updateDistributorWalletBalanceQuery, req.Amount, req.PhoneNumber)
+	if err != nil {
 		return err
 	}
 
-	if _, err := tx.Exec(context.Background(), updateAdminWalletBalanceQuery, req.Amount, req.AdminID); err != nil {
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("distributor refund failed: insufficient balance or distributor not found")
+	}
+
+	// 2. Credit admin wallet
+	if _, err := tx.Exec(ctx, updateAdminWalletBalanceQuery, req.Amount, req.AdminID); err != nil {
 		return err
 	}
 
-	return tx.Commit(context.Background())
+	return tx.Commit(ctx)
 }
