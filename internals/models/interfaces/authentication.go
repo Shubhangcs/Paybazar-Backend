@@ -19,4 +19,8 @@ type AuthInterface interface {
 	VerifyMPIN(echo.Context) error
 	UpdateUserProfile(echo.Context) error
 	GetUserProfile(echo.Context) (*structures.GetUserProfile, error)
+	UpdateMasterDistributorProfile(echo.Context) error
+	GetMasterDistributorProfile(echo.Context) (*structures.GetMasterDistributorProfile, error)
+	UpdateDistributorProfile(echo.Context) error
+	GetDistributorProfile(echo.Context) (*structures.GetDistributorProfile, error)
 }

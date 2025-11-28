@@ -173,3 +173,65 @@ type AuthResponse struct {
 	Status  string `json:"status"`
 	Data    any    `json:"data,omitempty"`
 }
+
+type UpdateMasterDistributorProfile struct {
+	MasterDistributorID           string `json:"master_distributor_id"`
+	MasterDistributorName         string `json:"master_distributor_name"`
+	MasterDistributorEmail        string `json:"master_distributor_email"`
+	MasterDistributorPhone        string `json:"master_distributor_phone"`
+	MasterDistributorAadharNumber string `json:"master_distributor_aadhar_number"`
+	MasterDistributorPanNumber    string `json:"master_distributor_pan_number"`
+	MasterDistributorCity         string `json:"master_distributor_city"`
+	MasterDistributorState        string `json:"master_distributor_state"`
+	MasterDistributorAddress      string `json:"master_distributor_address"`
+	MasterDistributorPincode      string `json:"master_distributor_pincode"`
+	MasterDistributorDateOfBirth  string `json:"master_distributor_date_of_birth"`
+	MasterDistributorGender       string `json:"master_distributor_gender"`
+}
+
+type GetMasterDistributorProfile struct {
+	MasterDistributorID           string `json:"master_distributor_id"`
+	MasterDistributorUniqueID     string `json:"master_distributor_unique_id"`
+	MasterDistributorName         string `json:"master_distributor_name"`
+	MasterDistributorEmail        string `json:"master_distributor_email"`
+	MasterDistributorPhone        string `json:"master_distributor_phone"`
+	MasterDistributorAadharNumber string `json:"master_distributor_aadhar_number"`
+	MasterDistributorPanNumber    string `json:"master_distributor_pan_number"`
+	MasterDistributorCity         string `json:"master_distributor_city"`
+	MasterDistributorState        string `json:"master_distributor_state"`
+	MasterDistributorAddress      string `json:"master_distributor_address"`
+	MasterDistributorPincode      string `json:"master_distributor_pincode"`
+	MasterDistributorDateOfBirth  string `json:"master_distributor_date_of_birth"`
+	MasterDistributorGender       string `json:"master_distributor_gender"`
+}
+
+type GetDistributorProfile struct {
+	DistributorID           string `json:"distributor_id"`
+	DistributorUniqueID     string `json:"distributor_unique_id"`
+	DistributorName         string `json:"distributor_name"`
+	DistributorEmail        string `json:"distributor_email"`
+	DistributorPhone        string `json:"distributor_phone"`
+	DistributorAadharNumber string `json:"distributor_aadhar_number"`
+	DistributorPanNumber    string `json:"distributor_pan_number"`
+	DistributorCity         string `json:"distributor_city"`
+	DistributorState        string `json:"distributor_state"`
+	DistributorAddress      string `json:"distributor_address"`
+	DistributorPincode      string `json:"distributor_pincode"`
+	DistributorDateOfBirth  string `json:"distributor_date_of_birth"`
+	DistributorGender       string `json:"distributor_gender"`
+}
+
+type UpdateDistributorProfile struct {
+	DistributorID           string `json:"distributor_id"`
+	DistributorName         string `json:"distributor_name"`
+	DistributorEmail        string `json:"distributor_email"`
+	DistributorPhone        string `json:"distributor_phone"`
+	DistributorAadharNumber string `json:"distributor_aadhar_number"`
+	DistributorPanNumber    string `json:"distributor_pan_number"`
+	DistributorCity         string `json:"distributor_city"`
+	DistributorState        string `json_json:"distributor_state"`
+	DistributorAddress      string `json:"distributor_address"`
+	DistributorPincode      string `json:"distributor_pincode"`
+	DistributorDateOfBirth  string `json:"distributor_date_of_birth"`
+	DistributorGender       string `json:"distributor_gender"`
+}

@@ -133,3 +133,54 @@ func (ah *authHandler) GetUserProfileRequest(e echo.Context) error {
 	}
 	return e.JSON(http.StatusOK, structures.AuthResponse{Message: "user profile fetched successfully", Status: "success", Data: map[string]any{"user": res}})
 }
+
+func (ah *authHandler) UpdateMasterDistributorProfileRequest(e echo.Context) error {
+	err := ah.authRepo.UpdateMasterDistributorProfile(e)
+	if err != nil {
+		return authRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{
+		Message: "master distributor profile updated successfully",
+		Status:  "success",
+	})
+}
+
+func (ah *authHandler) GetMasterDistributorProfileRequest(e echo.Context) error {
+	res, err := ah.authRepo.GetMasterDistributorProfile(e)
+	if err != nil {
+		return authRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{
+		Message: "master distributor profile fetched successfully",
+		Status:  "success",
+		Data: map[string]any{
+			"master_distributor": res,
+		},
+	})
+}
+
+
+func (ah *authHandler) UpdateDistributorProfileRequest(e echo.Context) error {
+	err := ah.authRepo.UpdateDistributorProfile(e)
+	if err != nil {
+		return authRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{
+		Message: "distributor profile updated successfully",
+		Status:  "success",
+	})
+}
+
+func (ah *authHandler) GetDistributorProfileRequest(e echo.Context) error {
+	res, err := ah.authRepo.GetDistributorProfile(e)
+	if err != nil {
+		return authRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.AuthResponse{
+		Message: "distributor profile fetched successfully",
+		Status:  "success",
+		Data: map[string]any{
+			"distributor": res,
+		},
+	})
+}

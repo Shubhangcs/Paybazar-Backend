@@ -93,6 +93,8 @@ func (r *Routes) MasterDistributorRoutes(rg *echo.Group) {
 	)
 	var authHandler = handlers.NewAuthHandler(authRepo)
 	rg.POST("/login", authHandler.LoginMasterDistributorRequest)
+	rg.GET("/get/profile/:master_distributor_id" , authHandler.GetMasterDistributorProfileRequest)
+	rg.POST("/update/profile", authHandler.UpdateMasterDistributorProfileRequest)
 
 	// Fund Request
 	var fundRequestRepo = repositories.NewFundRequestRepository(
@@ -121,6 +123,8 @@ func (r *Routes) DistributorRoutes(rg *echo.Group) {
 	)
 	var authHandler = handlers.NewAuthHandler(authRepo)
 	rg.POST("/login", authHandler.LoginDistributorRequest)
+	rg.GET("/get/profile/:distributor_id" , authHandler.GetDistributorProfileRequest)
+	rg.POST("/update/profile", authHandler.UpdateDistributorProfileRequest)
 
 	// Fund Request
 	var fundRequestRepo = repositories.NewFundRequestRepository(

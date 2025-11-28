@@ -321,3 +321,62 @@ func (ar *authRepository) GetUserProfile(e echo.Context) (*structures.GetUserPro
 	}
 	return res, nil
 }
+
+func (ar *authRepository) UpdateMasterDistributorProfile(e echo.Context) error {
+	var req structures.UpdateMasterDistributorProfile
+	if err := e.Bind(&req); err != nil {
+		return fmt.Errorf("invalid request format")
+	}
+
+	if err := ar.query.UpdateMasterDistributorProfile(&req); err != nil {
+		log.Println("failed to update master distributor profile:", err)
+		return fmt.Errorf("failed to update profile")
+	}
+
+	return nil
+}
+
+func (ar *authRepository) GetMasterDistributorProfile(e echo.Context) (*structures.GetMasterDistributorProfile, error) {
+	masterDistributorID := e.Param("master_distributor_id")
+	if masterDistributorID == "" {
+		return nil, fmt.Errorf("master distributor id not found")
+	}
+
+	res, err := ar.query.FetchMasterDistributorProfileDetails(masterDistributorID)
+	if err != nil {
+		log.Println("failed to fetch master distributor profile details:", err)
+		return nil, fmt.Errorf("failed to fetch profile details")
+	}
+
+	return res, nil
+}
+
+
+func (ar *authRepository) UpdateDistributorProfile(e echo.Context) error {
+	var req structures.UpdateDistributorProfile
+	if err := e.Bind(&req); err != nil {
+		return fmt.Errorf("invalid request format")
+	}
+
+	if err := ar.query.UpdateDistributorProfile(&req); err != nil {
+		log.Println("failed to update distributor profile:", err)
+		return fmt.Errorf("failed to update profile")
+	}
+
+	return nil
+}
+
+func (ar *authRepository) GetDistributorProfile(e echo.Context) (*structures.GetDistributorProfile, error) {
+	distributorID := e.Param("distributor_id")
+	if distributorID == "" {
+		return nil, fmt.Errorf("distributor id not found")
+	}
+
+	res, err := ar.query.FetchDistributorProfileDetails(distributorID)
+	if err != nil {
+		log.Println("failed to fetch distributor profile details:", err)
+		return nil, fmt.Errorf("failed to fetch profile details")
+	}
+
+	return res, nil
+}

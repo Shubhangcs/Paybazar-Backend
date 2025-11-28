@@ -482,3 +482,172 @@ func (q *Query) FetchProfileDetails(userId string) (*structures.GetUserProfile, 
 	)
 	return &res, err
 }
+
+// UpdateMasterDistributorProfile updates the master distributor's profile details.
+func (q *Query) UpdateMasterDistributorProfile(req *structures.UpdateMasterDistributorProfile) error {
+	query := `
+		UPDATE master_distributors
+		SET master_distributor_name=$1,
+			master_distributor_email=$2,
+			master_distributor_phone=$3,
+			master_distributor_aadhar_number=$4,
+			master_distributor_pan_number=$5,
+			master_distributor_city=$6,
+			master_distributor_state=$7,
+			master_distributor_address=$8,
+			master_distributor_pincode=$9,
+			master_distributor_date_of_birth=$10,
+			master_distributor_gender=$11
+		WHERE master_distributor_id=$12;
+	`
+
+	_, err := q.Pool.Exec(
+		context.Background(),
+		query,
+		req.MasterDistributorName,
+		req.MasterDistributorEmail,
+		req.MasterDistributorPhone,
+		req.MasterDistributorAadharNumber,
+		req.MasterDistributorPanNumber,
+		req.MasterDistributorCity,
+		req.MasterDistributorState,
+		req.MasterDistributorAddress,
+		req.MasterDistributorPincode,
+		req.MasterDistributorDateOfBirth,
+		req.MasterDistributorGender,
+		req.MasterDistributorID,
+	)
+
+	return err
+}
+
+// FetchMasterDistributorProfileDetails fetches the master distributor's profile details.
+func (q *Query) FetchMasterDistributorProfileDetails(masterDistributorID string) (*structures.GetMasterDistributorProfile, error) {
+	var res structures.GetMasterDistributorProfile
+
+	query := `
+		SELECT 
+			master_distributor_id,
+			master_distributor_unique_id,
+			master_distributor_name,
+			master_distributor_email,
+			master_distributor_phone,
+			master_distributor_aadhar_number,
+			master_distributor_pan_number,
+			master_distributor_city,
+			master_distributor_state,
+			master_distributor_address,
+			master_distributor_pincode,
+			master_distributor_date_of_birth,
+			master_distributor_gender
+		FROM master_distributors
+		WHERE master_distributor_id=$1;
+	`
+
+	err := q.Pool.QueryRow(
+		context.Background(),
+		query,
+		masterDistributorID,
+	).Scan(
+		&res.MasterDistributorID,
+		&res.MasterDistributorUniqueID,
+		&res.MasterDistributorName,
+		&res.MasterDistributorEmail,
+		&res.MasterDistributorPhone,
+		&res.MasterDistributorAadharNumber,
+		&res.MasterDistributorPanNumber,
+		&res.MasterDistributorCity,
+		&res.MasterDistributorState,
+		&res.MasterDistributorAddress,
+		&res.MasterDistributorPincode,
+		&res.MasterDistributorDateOfBirth,
+		&res.MasterDistributorGender,
+	)
+
+	return &res, err
+}
+
+// UpdateDistributorProfile updates the distributor's profile details.
+func (q *Query) UpdateDistributorProfile(req *structures.UpdateDistributorProfile) error {
+	query := `
+		UPDATE distributors
+		SET distributor_name=$1,
+			distributor_email=$2,
+			distributor_phone=$3,
+			distributor_aadhar_number=$4,
+			distributor_pan_number=$5,
+			distributor_city=$6,
+			distributor_state=$7,
+			distributor_address=$8,
+			distributor_pincode=$9,
+			distributor_date_of_birth=$10,
+			distributor_gender=$11
+		WHERE distributor_id=$12;
+	`
+
+	_, err := q.Pool.Exec(
+		context.Background(),
+		query,
+		req.DistributorName,
+		req.DistributorEmail,
+		req.DistributorPhone,
+		req.DistributorAadharNumber,
+		req.DistributorPanNumber,
+		req.DistributorCity,
+		req.DistributorState,
+		req.DistributorAddress,
+		req.DistributorPincode,
+		req.DistributorDateOfBirth,
+		req.DistributorGender,
+		req.DistributorID,
+	)
+
+	return err
+}
+
+// FetchDistributorProfileDetails fetches the distributor's profile details.
+func (q *Query) FetchDistributorProfileDetails(distributorID string) (*structures.GetDistributorProfile, error) {
+	var res structures.GetDistributorProfile
+
+	query := `
+		SELECT 
+			distributor_id,
+			distributor_unique_id,
+			distributor_name,
+			distributor_email,
+			distributor_phone,
+			distributor_aadhar_number,
+			distributor_pan_number,
+			distributor_city,
+			distributor_state,
+			distributor_address,
+			distributor_pincode,
+			distributor_date_of_birth,
+			distributor_gender
+		FROM distributors
+		WHERE distributor_id=$1;
+	`
+
+	err := q.Pool.QueryRow(
+		context.Background(),
+		query,
+		distributorID,
+	).Scan(
+		&res.DistributorID,
+		&res.DistributorUniqueID,
+		&res.DistributorName,
+		&res.DistributorEmail,
+		&res.DistributorPhone,
+		&res.DistributorAadharNumber,
+		&res.DistributorPanNumber,
+		&res.DistributorCity,
+		&res.DistributorState,
+		&res.DistributorAddress,
+		&res.DistributorPincode,
+		&res.DistributorDateOfBirth,
+		&res.DistributorGender,
+	)
+
+	return &res, err
+}
+
