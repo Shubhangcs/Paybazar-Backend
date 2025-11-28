@@ -160,7 +160,7 @@ func (q *Query) UserRefund(req *structures.RefundRequest) error {
 		UPDATE users SET user_wallet_balance = user_wallet_balance - $1::NUMERIC WHERE user_phone=$2 AND user_wallet_balance >= $1::NUMERIC
 	`
 	updateAdminWalletBalanceQuery := `
-		UPDATE admin SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
+		UPDATE admins SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
 	`
 
 	tx, err := q.Pool.Begin(context.Background())
@@ -185,7 +185,7 @@ func (q *Query) MasterDistributorRefund(req *structures.RefundRequest) error {
 		UPDATE master_distributors SET master_distributor_wallet_balance = master_distributor_wallet_balance - $1::NUMERIC WHERE master_distributor_phone=$2 AND master_distributor_wallet_balance >= $1::NUMERIC
 	`
 	updateAdminWalletBalanceQuery := `
-		UPDATE admin SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
+		UPDATE admins SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
 	`
 
 	tx, err := q.Pool.Begin(context.Background())
@@ -210,7 +210,7 @@ func (q *Query) DistributorRefund(req *structures.RefundRequest) error  {
 		UPDATE distributors SET distributor_wallet_balance = distributor_wallet_balance - $1::NUMERIC WHERE distributor_phone=$2 AND distributor_wallet_balance >= $1::NUMERIC
 	`
 	updateAdminWalletBalanceQuery := `
-		UPDATE admin SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
+		UPDATE admins SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC WHERE admin_id=$2;
 	`
 
 	tx, err := q.Pool.Begin(context.Background())
