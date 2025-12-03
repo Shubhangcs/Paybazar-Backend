@@ -48,3 +48,11 @@ func (ph *payoutHandler) GetPayoutTransactionRequest(e echo.Context) error {
 	// res is a success message string from the repo (e.g., "Transaction successful")
 	return e.JSON(http.StatusOK, structures.FundRequestResponse{Message: "successfully fetched transactions", Status: "success", Data: map[string]any{"transactions": res}})
 }
+
+func (ph *payoutHandler) VerifyPayoutAccountNumber(e echo.Context) error {
+	res, err := ph.payoutRepo.VerifyAccountNumber(e)
+	if err != nil {
+		return payoutRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, res)
+}

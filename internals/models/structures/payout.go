@@ -61,11 +61,17 @@ type GetPayoutLogs struct {
 	TransferType           string `json:"transfer_type"`
 	TransactionStatus      string `json:"transaction_status"`
 	TransactionDateAndTime string `json:"transaction_date_and_time"`
-	AccountNumber string `json:"account_number"`
+	AccountNumber          string `json:"account_number"`
 }
 
 type PayoutApiFailureResponse struct {
 	Error               int    `json:"error"`
 	Message             string `json:"message"`
 	PayoutTransactionID string `json:"payout_transaction_id"`
+}
+
+type PayoutVerifyAccountResponse struct {
+	StatusCode int    `json:"status_code"`
+	Status     bool   `json:"status"`
+	Message    string `json:"message"`
 }

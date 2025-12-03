@@ -2,27 +2,33 @@ package repositories
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/queries"
 	"github.com/Srujankm12/paybazar-api/internals/models/structures"
+	"github.com/Srujankm12/paybazar-api/pkg"
 	"github.com/labstack/echo/v4"
 )
 
 type payoutRepo struct {
-	query *queries.Query
+	query    *queries.Query
+	jwtUtils *pkg.JwtUtils
 }
 
-func NewPayoutRepository(query *queries.Query) *payoutRepo {
+func NewPayoutRepository(query *queries.Query, jwtUtils *pkg.JwtUtils) *payoutRepo {
 	return &payoutRepo{
-		query: query,
+		query:    query,
+		jwtUtils: jwtUtils,
 	}
 }
 
@@ -187,4 +193,67 @@ func (pr *payoutRepo) GetPayoutTransactions(e echo.Context) (*[]structures.GetPa
 		return nil, fmt.Errorf("failed to fetch payout transactions")
 	}
 	return res, nil
+}
+
+// helper: generate a unique numeric string of given length using crypto/rand
+func generateUniqueNumericString(length int) (string, error) {
+	if length <= 0 {
+		return "", nil
+	}
+	max := big.NewInt(10)
+	var sb strings.Builder
+	for i := 0; i < length; i++ {
+		n, err := rand.Int(rand.Reader, max)
+		if err != nil {
+			return "", err
+		}
+		sb.WriteString(n.String())
+	}
+	return sb.String(), nil
+}
+
+func (pr *payoutRepo) VerifyAccountNumber(e echo.Context) (*structures.PayoutVerifyAccountResponse, error) {
+	refID := e.Param("phone")
+	accNum := e.Param("account_number")
+
+	// generate unique random numeric string (nonce)
+	nonce, _ := generateUniqueNumericString(12)
+
+	// generate JWT token
+	token, err := pr.jwtUtils.GenerateTokenForExternalAPI(nonce)
+	if err != nil {
+		return nil, err
+	}
+
+	// payload with dynamic values
+	payload := map[string]string{
+		"refid":          refID,
+		"account_number": accNum,
+	}
+
+	bodyBytes, _ := json.Marshal(payload)
+
+	req, _ := http.NewRequest("POST",
+		"https://uat.paysprint.in/sprintverify-uat/api/v1/verification/penny_drop_v2",
+		strings.NewReader(string(bodyBytes)),
+	)
+
+	req.Header.Add("accept", "application/json")
+	req.Header.Add("Token", token)
+	req.Header.Add("authorisedkey", "TVRJek5EVTJOelUwTnpKRFQxSlFNREF3TURFPQ==")
+	req.Header.Add("content-type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, _ := io.ReadAll(res.Body)
+
+	// decode API response directly and return
+	var resp structures.PayoutVerifyAccountResponse
+	_ = json.Unmarshal(body, &resp)
+
+	return &resp, nil
 }

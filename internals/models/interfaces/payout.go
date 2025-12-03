@@ -8,4 +8,5 @@ import (
 type PayoutInterface interface {
 	PayoutRequest(echo.Context) (string, error)
 	GetPayoutTransactions(echo.Context) (*[]structures.GetPayoutLogs, error)
+	VerifyAccountNumber(echo.Context) (*structures.PayoutVerifyAccountResponse, error)
 }
