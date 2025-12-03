@@ -257,7 +257,7 @@ func (pr *payoutRepo) VerifyAccountNumber(e echo.Context) (*structures.PayoutVer
 	var resp structures.PayoutVerifyAccountResponse
 	_ = json.Unmarshal(body, &resp)
 
-	log.Println(resp)
+	log.Println(string(body))
 
 	return &resp, nil
 }
