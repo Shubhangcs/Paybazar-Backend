@@ -215,6 +215,7 @@ func generateUniqueNumericString(length int) (string, error) {
 func (pr *payoutRepo) VerifyAccountNumber(e echo.Context) (*structures.PayoutVerifyAccountResponse, error) {
 	refID := e.Param("phone")
 	accNum := e.Param("account_number")
+	ifsc := e.Param("ifsc")
 
 	// generate unique random numeric string (nonce)
 	nonce, _ := generateUniqueNumericString(12)
@@ -229,6 +230,7 @@ func (pr *payoutRepo) VerifyAccountNumber(e echo.Context) (*structures.PayoutVer
 	payload := map[string]string{
 		"refid":          refID,
 		"account_number": accNum,
+		"ifsc_code": ifsc,
 	}
 
 	bodyBytes, _ := json.Marshal(payload)
