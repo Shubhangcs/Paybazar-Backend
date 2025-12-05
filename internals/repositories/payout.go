@@ -230,12 +230,13 @@ func (pr *payoutRepo) VerifyAccountNumber(e echo.Context) (*structures.PayoutVer
 	payload := map[string]string{
 		"refid":          refID,
 		"account_number": accNum,
-		"ifsc_code": ifsc,
+		"ifsc_code":      ifsc,
 	}
 
 	bodyBytes, _ := json.Marshal(payload)
 
-	req, _ := http.NewRequest("POST",
+	req, _ := http.NewRequest(
+		"POST",
 		"https://api.verifya2z.com/api/v1/verification/penny_drop_v2",
 		strings.NewReader(string(bodyBytes)),
 	)
