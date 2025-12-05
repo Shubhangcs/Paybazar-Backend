@@ -236,7 +236,7 @@ func (pr *payoutRepo) VerifyAccountNumber(e echo.Context) (*structures.PayoutVer
 	bodyBytes, _ := json.Marshal(payload)
 
 	req, _ := http.NewRequest("POST",
-		"https://uat.paysprint.in/sprintverify-uat/api/v1/verification/penny_drop_v2",
+		"https://api.verifya2z.com/api/v1/verification/penny_drop_v2",
 		strings.NewReader(string(bodyBytes)),
 	)
 

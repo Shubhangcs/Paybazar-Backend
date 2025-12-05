@@ -35,7 +35,7 @@ func (JwtUtils) GenerateTokenForExternalAPI(reqid string) (string, error) {
 
 	// Creating a jwt
 	var claims = jwt.MapClaims{
-		"partnerId": "CORP00001",
+		"partnerId": "CORP00002314",
 		"reqid":     reqid,
 		"timestamp": time.Now().Unix(),
 	}
