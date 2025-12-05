@@ -242,7 +242,6 @@ func (pr *payoutRepo) VerifyAccountNumber(e echo.Context) (*structures.PayoutVer
 
 	req.Header.Add("accept", "application/json")
 	req.Header.Add("Token", token)
-	req.Header.Add("authorisedkey", "TVRJek5EVTJOelUwTnpKRFQxSlFNREF3TURFPQ==")
 	req.Header.Add("content-type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
