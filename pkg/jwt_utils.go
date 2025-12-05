@@ -31,7 +31,7 @@ func (JwtUtils) GenerateToken(data interface{}, expiry time.Duration) (string, e
 
 func (JwtUtils) GenerateTokenForExternalAPI(reqid string) (string, error) {
 	// JWT secret key
-	var key []byte = []byte("UTA5U1VEQXdNREF4VFZSSmVrNUVWVEpPZWxVd1RuYzlQUT09")
+	var key []byte = []byte("UTA5U1VEQXdNREF5TXpFMFRucEpORTVFYTNsT2VsbDNUbmM5UFE9PQ==")
 
 	// Creating a jwt
 	var claims = jwt.MapClaims{
