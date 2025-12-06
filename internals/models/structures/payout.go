@@ -71,7 +71,14 @@ type PayoutApiFailureResponse struct {
 }
 
 type PayoutVerifyAccountResponse struct {
-	StatusCode int    `json:"status_code"`
-	Status     bool   `json:"status"`
-	Message    string `json:"message"`
+	StatusCode int               `json:"status_code"`
+	Status     bool              `json:"status"`
+	Message    string            `json:"message"`
+	Data       PayoutUserDetails `json:"data"`
+}
+
+type PayoutUserDetails struct {
+	UserName   string `json:"c_name"`
+	BankName   string `json:"bank_name"`
+	BranchName string `json:"branch_name"`
 }
