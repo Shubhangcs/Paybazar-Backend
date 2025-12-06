@@ -599,7 +599,7 @@ func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLog
 func (q *Query) DeductUserBalanceForVerification(userId string) error {
 	query := `
 		UPDATE users SET user_wallet_balance = user_wallet_balance - 3
-		WHERE user_id=$1;
+		WHERE user_id=$1 AND user_wallet_balance >= 3;
 	`
 
 	if _, err := q.Pool.Exec(context.Background(), query, userId); err != nil {
