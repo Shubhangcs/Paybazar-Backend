@@ -213,6 +213,7 @@ func generateUniqueNumericString(length int) (string, error) {
 }
 
 func (pr *payoutRepo) VerifyAccountNumber(e echo.Context) (*structures.PayoutVerifyAccountResponse, error) {
+	userId := e.Param("user_id")
 	refID := e.Param("phone")
 	accNum := e.Param("account_number")
 	ifsc := e.Param("ifsc")
@@ -234,6 +235,10 @@ func (pr *payoutRepo) VerifyAccountNumber(e echo.Context) (*structures.PayoutVer
 	}
 
 	bodyBytes, _ := json.Marshal(payload)
+
+	if err := pr.query.DeductUserBalanceForVerification(userId); err != nil {
+		return nil, err
+	}
 
 	req, _ := http.NewRequest(
 		"POST",

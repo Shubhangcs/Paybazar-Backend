@@ -595,3 +595,15 @@ func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLog
 	}
 	return &payoutTransactions, nil
 }
+
+func (q *Query) DeductUserBalanceForVerification(userId string) error {
+	query := `
+		UPDATE users SET user_wallet_balance = user_wallet_balance - 3
+		WHERE user_id=$1;
+	`
+
+	if _, err := q.Pool.Exec(context.Background(), query, userId); err != nil {
+		return fmt.Errorf("failed to complete verification")
+	}
+	return nil
+}
