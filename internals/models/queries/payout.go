@@ -596,14 +596,47 @@ func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLog
 	return &payoutTransactions, nil
 }
 
+
 func (q *Query) DeductUserBalanceForVerification(userId string) error {
+	ctx := context.Background()
+	tx, err := q.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
 	query := `
-		UPDATE users SET user_wallet_balance = user_wallet_balance - 3
-		WHERE user_id=$1 AND user_wallet_balance >= 3;
+		WITH admin_user AS (
+			SELECT admin_id 
+			FROM users 
+			WHERE user_id=$1
+			LIMIT 1
+		),
+		deduct AS (
+			UPDATE users
+			SET user_wallet_balance = user_wallet_balance - 3
+			WHERE user_id = $1 AND user_wallet_balance >= 3
+			RETURNING 3 AS amount_deducted
+		)
+		UPDATE admins
+		SET admin_wallet_balance = admin_wallet_balance + (SELECT amount_deducted FROM deduct)
+		WHERE admin_id = (SELECT admin_id FROM admin_user);
 	`
 
-	if _, err := q.Pool.Exec(context.Background(), query, userId); err != nil {
-		return fmt.Errorf("failed to complete verification")
+	// Execute the combined transaction query
+	cmdTag, err := tx.Exec(ctx, query, userId)
+	if err != nil {
+		return fmt.Errorf("verification wallet transaction failed: %w", err)
 	}
+
+	// If nothing was deducted, it means user had insufficient balance
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("insufficient balance")
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
 	return nil
 }
