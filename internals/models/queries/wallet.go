@@ -423,40 +423,40 @@ func (q *Query) MasterDistributorFundDistributor(req *structures.MasterDistribut
 	`
 	updateTransaction := `
 		WITH md_details AS (
-			SELECT master_distributor_id, master_distributor_name
-			FROM master_distributors
-			WHERE master_distributor_id=$1
-		)
-		distributor_details AS (
-			SELECT distributor_id, distributor_name
-			FROM distributors
-			WHERE distributor_phone=$2
-		)
-		INSERT INTO transactions (
-			transactor_id,
-			receiver_id,
-			transactor_name,
-			receiver_name,
-			transactor_type,
-			receiver_type,
-			transaction_type,
-			transaction_service,
-			amount,
-			transaction_status,
-			remarks
-		) VALUES (
-			 (SELECT master_distributor_id FROM md_details),
-			 (SELECT distributor_id FROM distributor_details),
-			 (SELECT master_distributor_name FROM md_details),
-			 (SELECT distributor_name FROM distributor_details),
-			 'MASTER_DISTRIBUTOR',
-			 'DISTRIBUTOR',
-			 'DEBIT',
-			 'FUND_TRANSFER',
-			 $3,
-			 'SUCCESS',
-			 'FUND TRANSFER TO DISTRIBUTOR'
-		);
+    SELECT master_distributor_id, master_distributor_name
+    FROM master_distributors
+    WHERE master_distributor_id = $1
+),
+distributor_details AS (
+    SELECT distributor_id, distributor_name
+    FROM distributors
+    WHERE distributor_phone = $2
+)
+INSERT INTO transactions (
+    transactor_id,
+    receiver_id,
+    transactor_name,
+    receiver_name,
+    transactor_type,
+    receiver_type,
+    transaction_type,
+    transaction_service,
+    amount,
+    transaction_status,
+    remarks
+) VALUES (
+    (SELECT master_distributor_id FROM md_details),
+    (SELECT distributor_id FROM distributor_details),
+    (SELECT master_distributor_name FROM md_details),
+    (SELECT distributor_name FROM distributor_details),
+    'MASTER_DISTRIBUTOR',
+    'DISTRIBUTOR',
+    'DEBIT',
+    'FUND_TRANSFER',
+    $3,
+    'SUCCESS',
+    'FUND TRANSFER TO DISTRIBUTOR'
+);
 	`
 
 	ctx := context.Background()
@@ -510,7 +510,7 @@ func (q *Query) DistributorFundRetailer(req *structures.DistributorFundRetailerR
 			SELECT distributor_id, distributor_name
 			FROM distributors
 			WHERE distributor_id=$1
-		)
+		),
 		user_details AS (
 			SELECT user_id, user_name
 			FROM users
