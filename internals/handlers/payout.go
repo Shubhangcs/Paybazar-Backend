@@ -61,7 +61,7 @@ func (ph *payoutHandler) PayoutTransactionRefund(e echo.Context) error {
 	transactionId := e.Param("transaction_id")
 	err := ph.payoutRepo.RefundPayoutTransaction(transactionId)
 	if err != nil {
-		return payoutRespondWithError(e, err)
+		return e.JSON(http.StatusBadRequest , err)
 	}
 	return e.JSON(http.StatusOK, "refund successfull")
 }
