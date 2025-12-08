@@ -388,6 +388,7 @@ func (q *Query) MasterDistributorFundRetailer(req *structures.MasterDistributorF
 	// 1. Deduct from MD wallet
 	cmdTag, err := tx.Exec(ctx, updateMdWalletBalanceQuery, req.Amount, req.MasterDistributorID)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -397,10 +398,12 @@ func (q *Query) MasterDistributorFundRetailer(req *structures.MasterDistributorF
 
 	// 2. Credit admin wallet
 	if _, err := tx.Exec(ctx, updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber); err != nil {
+		log.Println(err)
 		return err
 	}
 
 	if _, err := tx.Exec(ctx, updateTransaction, req.MasterDistributorID, req.PhoneNumber, req.Amount); err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -460,6 +463,7 @@ func (q *Query) MasterDistributorFundDistributor(req *structures.MasterDistribut
 
 	tx, err := q.Pool.Begin(ctx)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer tx.Rollback(ctx)
@@ -467,6 +471,7 @@ func (q *Query) MasterDistributorFundDistributor(req *structures.MasterDistribut
 	// 1. Deduct from MD wallet
 	cmdTag, err := tx.Exec(ctx, updateMdWalletBalanceQuery, req.Amount, req.MasterDistributorID)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -476,10 +481,12 @@ func (q *Query) MasterDistributorFundDistributor(req *structures.MasterDistribut
 
 	// 2. Credit admin wallet
 	if _, err := tx.Exec(ctx, updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber); err != nil {
+		log.Println(err)
 		return err
 	}
 
 	if _, err := tx.Exec(ctx, updateTransaction, req.MasterDistributorID, req.PhoneNumber, req.Amount); err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -540,6 +547,7 @@ func (q *Query) DistributorFundRetailer(req *structures.DistributorFundRetailerR
 
 	tx, err := q.Pool.Begin(ctx)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer tx.Rollback(ctx)
@@ -547,6 +555,7 @@ func (q *Query) DistributorFundRetailer(req *structures.DistributorFundRetailerR
 	// 1. Deduct from MD wallet
 	cmdTag, err := tx.Exec(ctx, updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -556,10 +565,12 @@ func (q *Query) DistributorFundRetailer(req *structures.DistributorFundRetailerR
 
 	// 2. Credit admin wallet
 	if _, err := tx.Exec(ctx, updateDistributorWalletBalanceQuery, req.Amount, req.DistributorID); err != nil {
+		log.Println(err)
 		return err
 	}
 
 	if _, err := tx.Exec(ctx, updateTransaction, req.DistributorID, req.PhoneNumber, req.Amount); err != nil {
+		log.Println(err)
 		return err
 	}
 
