@@ -171,7 +171,7 @@ func (q *Query) UserRefund(req *structures.RefundRequest) error {
 	addToHistory := `
 		WITH user_details AS(
 			SELECT user_unique_id, user_name, user_phone
-			FROM users WHERE user_phone=$1;
+			FROM users WHERE user_phone=$1
 		)
 		INSERT INTO revert_history(unique_id,name,phone,amount)
 		VALUES(
@@ -230,7 +230,7 @@ func (q *Query) MasterDistributorRefund(req *structures.RefundRequest) error {
 	addToHistory := `
 		WITH md_details AS(
 			SELECT master_distributor_unique_id, master_distributor_name, master_distributor_phone
-			FROM master_distributors WHERE master_distributor_phone=$1;
+			FROM master_distributors WHERE master_distributor_phone=$1
 		)
 		INSERT INTO revert_history(unique_id,name,phone,amount)
 		VALUES(
@@ -286,7 +286,7 @@ func (q *Query) DistributorRefund(req *structures.RefundRequest) error {
 	addToHistory := `
 		WITH dis_details AS(
 			SELECT distributor_unique_id, distributor_name, distributor_phone
-			FROM distributors WHERE distributor_phone=$1;
+			FROM distributors WHERE distributor_phone=$1
 		)
 		INSERT INTO revert_history(unique_id,name,phone,amount)
 		VALUES(
