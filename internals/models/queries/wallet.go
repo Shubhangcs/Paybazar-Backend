@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/structures"
@@ -206,6 +207,7 @@ func (q *Query) UserRefund(req *structures.RefundRequest) error {
 	}
 
 	if _, err := tx.Exec(ctx, addToHistory, req.PhoneNumber, req.Amount); err != nil {
+				log.Println(err)
 		return err
 	}
 
@@ -263,6 +265,7 @@ func (q *Query) MasterDistributorRefund(req *structures.RefundRequest) error {
 	}
 
 	if _, err := tx.Exec(ctx, addToHistory, req.PhoneNumber, req.Amount); err != nil {
+				log.Println(err)
 		return err
 	}
 
@@ -318,6 +321,7 @@ func (q *Query) DistributorRefund(req *structures.RefundRequest) error {
 	}
 
 	if _, err := tx.Exec(ctx, addToHistory, req.PhoneNumber, req.Amount); err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -404,7 +408,7 @@ func (q *Query) GetRevertHistoryPhone(phoneNumber string) (*[]structures.GetReve
 	query := `
 		SELECT revert_id, unique_id, name, phone, amount, created_at
 		FROM revert_history
-		WHERE phone_number=$1;
+		WHERE phone=$1;
 	`
 	var revertHistories []structures.GetRevertHistory
 
