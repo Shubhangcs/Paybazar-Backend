@@ -709,7 +709,7 @@ func (q *Query) PayoutTransactionRefund(req *structures.PayoutRefund) error {
 		AdminID             string
 	}
 
-	if err := tx.QueryRow(context.Background(), getAllIdsFromUser).Scan(
+	if err := tx.QueryRow(context.Background(), getAllIdsFromUser, transactionDetails.UserID).Scan(
 		&usersDetails.MasterDistributorID,
 		&usersDetails.DistributorID,
 		&usersDetails.AdminID,
