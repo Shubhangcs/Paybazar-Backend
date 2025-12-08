@@ -53,19 +53,27 @@ type WalletResponse struct {
 	Data    any    `json:"data,omitempty"`
 }
 
+type GetRevertHistory struct {
+	RevertID  string `json:"revert_id"`
+	UniqueID  string `json:"unique_id"`
+	Name      string `json:"name"`
+	Phone     string `json:"phone"`
+	CreatedAt string `json:"created_at"`
+}
+
 type RefundRequest struct {
 	AdminID     string `json:"admin_id"`
 	PhoneNumber string `json:"phone_number"`
 	Amount      string `json:"amount"`
 }
 
-type MasterDistributorRefundRetailerRequest struct {
+type MasterDistributorFundRetailerRequest struct {
 	MasterDistributorID string `json:"master_distributor_id"`
 	PhoneNumber         string `json:"phone_number"`
 	Amount              string `json:"amount"`
 }
 
-type DistributorRefundRetailerRequest struct {
+type DistributorFundRetailerRequest struct {
 	DistributorID string `json:"distributor_id"`
 	PhoneNumber   string `json:"phone_number"`
 	Amount        string `json:"amount"`

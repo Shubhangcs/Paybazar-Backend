@@ -215,6 +215,15 @@ func (qr *Query) InitializeDatabase() {
 		`CREATE TRIGGER trg_fund_requests_updated_at BEFORE UPDATE ON fund_requests
 			FOR EACH ROW EXECUTE FUNCTION set_updated_at();`,
 
+		`CREATE TABLE IF NOT EXISTS revert_history(
+			revert_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+			unique_id TEXT NOT NULL,
+			name TEXT NOT NULL,
+			phone TEXT NOT NULL,
+			amount TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+
 		// ============================================================
 		// OTPs
 		// ============================================================

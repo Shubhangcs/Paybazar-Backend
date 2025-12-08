@@ -133,9 +133,8 @@ func (wh *walletHandler) DistributorRefundRequest(e echo.Context) error {
 	})
 }
 
-
-func (wh *walletHandler) MasterDistributorRefundRetailerRequest(e echo.Context) error {
-	err := wh.walletRepo.MasterDistributorRefundRetailer(e)
+func (wh *walletHandler) MasterDistributorFundRetailerRequest(e echo.Context) error {
+	err := wh.walletRepo.MasterDistributorFundRetailer(e)
 	if err != nil {
 		return walletRespondWithError(e, err)
 	}
@@ -145,13 +144,37 @@ func (wh *walletHandler) MasterDistributorRefundRetailerRequest(e echo.Context) 
 	})
 }
 
-func (wh *walletHandler) DistributorRefundRetailerRequest(e echo.Context) error {
-	err := wh.walletRepo.DistributorRefundRetailer(e)
+func (wh *walletHandler) DistributorFundRetailerRequest(e echo.Context) error {
+	err := wh.walletRepo.DistributorFundRetailer(e)
 	if err != nil {
 		return walletRespondWithError(e, err)
 	}
 	return e.JSON(http.StatusOK, structures.WalletResponse{
 		Message: "refund success",
 		Status:  "success",
+	})
+}
+
+func (wh *walletHandler) GetRevertHistory(e echo.Context) error {
+	res, err := wh.walletRepo.GetRevertHistory()
+	if err != nil {
+		return walletRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.WalletResponse{
+		Message: "revert history fetched successfully",
+		Status:  "success",
+		Data:    map[string]any{"revert_history": res},
+	})
+}
+
+func (wh *walletHandler) GetRevertHistoryPhone(e echo.Context) error {
+	res, err := wh.walletRepo.GetRevertHistoryPhone(e.Param("phone_number"))
+	if err != nil {
+		return walletRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.WalletResponse{
+		Message: "revert history fetched successfully",
+		Status:  "success",
+		Data:    map[string]any{"revert_history": res},
 	})
 }

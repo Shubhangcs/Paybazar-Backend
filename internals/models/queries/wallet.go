@@ -167,6 +167,19 @@ func (q *Query) UserRefund(req *structures.RefundRequest) error {
 		SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC
 		WHERE admin_id = $2;
 	`
+	addToHistory := `
+		WITH user_details AS(
+			SELECT user_unique_id, user_name, user_phone
+			FROM users WHERE user_phone=$1;
+		)
+		INSERT INTO revert_history(unique_id,name,phone,amount)
+		VALUES(
+			(SELECT user_unique_id FROM user_details),
+			(SELECT user_name FROM user_details),
+			(SELECT user_phone FROM user_details),
+			$2
+		);
+	`
 
 	ctx := context.Background()
 
@@ -192,6 +205,10 @@ func (q *Query) UserRefund(req *structures.RefundRequest) error {
 		return err
 	}
 
+	if _, err := tx.Exec(ctx, addToHistory, req.PhoneNumber, req.Amount); err != nil {
+		return err
+	}
+
 	// 3. Commit
 	return tx.Commit(ctx)
 }
@@ -206,6 +223,20 @@ func (q *Query) MasterDistributorRefund(req *structures.RefundRequest) error {
 		UPDATE admins
 		SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC
 		WHERE admin_id = $2;
+	`
+
+	addToHistory := `
+		WITH md_details AS(
+			SELECT master_distributor_unique_id, master_distributor_name, master_distributor_phone
+			FROM master_distributors WHERE master_distributor_phone=$1;
+		)
+		INSERT INTO revert_history(unique_id,name,phone,amount)
+		VALUES(
+			(SELECT master_distributor_unique_id FROM md_details),
+			(SELECT master_distributor_name FROM md_details),
+			(SELECT master_distributor_phone FROM md_details),
+			$2
+		);
 	`
 
 	ctx := context.Background()
@@ -231,6 +262,10 @@ func (q *Query) MasterDistributorRefund(req *structures.RefundRequest) error {
 		return err
 	}
 
+	if _, err := tx.Exec(ctx, addToHistory, req.PhoneNumber, req.Amount); err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
 }
 
@@ -244,6 +279,19 @@ func (q *Query) DistributorRefund(req *structures.RefundRequest) error {
 		UPDATE admins
 		SET admin_wallet_balance = admin_wallet_balance + $1::NUMERIC
 		WHERE admin_id = $2;
+	`
+	addToHistory := `
+		WITH dis_details AS(
+			SELECT distributor_unique_id, distributor_name, distributor_phone
+			FROM distributors WHERE distributor_phone=$1;
+		)
+		INSERT INTO revert_history(unique_id,name,phone,amount)
+		VALUES(
+			(SELECT distributor_unique_id FROM dis_details),
+			(SELECT distributor_name FROM dis_details),
+			(SELECT distributor_phone FROM dis_details),
+			$2
+		);
 	`
 
 	ctx := context.Background()
@@ -269,19 +317,23 @@ func (q *Query) DistributorRefund(req *structures.RefundRequest) error {
 		return err
 	}
 
+	if _, err := tx.Exec(ctx, addToHistory, req.PhoneNumber, req.Amount); err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
 }
 
-func (q *Query) MasterDistributorRefundRetailer(req *structures.MasterDistributorRefundRetailerRequest) error {
+func (q *Query) MasterDistributorFundRetailer(req *structures.MasterDistributorFundRetailerRequest) error {
 	updateMdWalletBalanceQuery := `
 		UPDATE master_distributors
-		SET master_distributor_wallet_balance = master_distributor_wallet_balance + $1::NUMERIC
-		WHERE master_distributor_id = $2;
+		SET master_distributor_wallet_balance = master_distributor_wallet_balance - $1::NUMERIC
+		WHERE master_distributor_id = $2 AND master_distributor_wallet_balance >= $1::NUMERIC;
 	`
 	updateUserWalletBalanceQuery := `
 		UPDATE users
-		SET user_wallet_balance = user_wallet_balance - $1::NUMERIC
-		WHERE user_phone = $2 AND user_wallet_balance >= $1::NUMERIC;
+		SET user_wallet_balance = user_wallet_balance + $1::NUMERIC
+		WHERE user_phone = $2;
 	`
 
 	ctx := context.Background()
@@ -293,7 +345,7 @@ func (q *Query) MasterDistributorRefundRetailer(req *structures.MasterDistributo
 	defer tx.Rollback(ctx)
 
 	// 1. Deduct from MD wallet
-	cmdTag, err := tx.Exec(ctx, updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber)
+	cmdTag, err := tx.Exec(ctx, updateMdWalletBalanceQuery, req.Amount, req.MasterDistributorID)
 	if err != nil {
 		return err
 	}
@@ -303,23 +355,23 @@ func (q *Query) MasterDistributorRefundRetailer(req *structures.MasterDistributo
 	}
 
 	// 2. Credit admin wallet
-	if _, err := tx.Exec(ctx, updateMdWalletBalanceQuery, req.Amount, req.MasterDistributorID); err != nil {
+	if _, err := tx.Exec(ctx, updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber); err != nil {
 		return err
 	}
 
 	return tx.Commit(ctx)
 }
 
-func (q *Query) DistributorRefundRetailer(req *structures.DistributorRefundRetailerRequest) error {
+func (q *Query) DistributorFundRetailer(req *structures.DistributorFundRetailerRequest) error {
 	updateDistributorWalletBalanceQuery := `
 		UPDATE distributors
-		SET distributor_wallet_balance = distributor_wallet_balance + $1::NUMERIC
-		WHERE distributor_id = $2;
+		SET distributor_wallet_balance = distributor_wallet_balance - $1::NUMERIC
+		WHERE distributor_id = $2  AND distributor_wallet_balance >= $1::NUMERIC;
 	`
 	updateUserWalletBalanceQuery := `
 		UPDATE users
-		SET user_wallet_balance = user_wallet_balance - $1::NUMERIC
-		WHERE user_phone = $2 AND user_wallet_balance >= $1::NUMERIC;
+		SET user_wallet_balance = user_wallet_balance + $1::NUMERIC
+		WHERE user_phone = $2;
 	`
 
 	ctx := context.Background()
@@ -346,4 +398,71 @@ func (q *Query) DistributorRefundRetailer(req *structures.DistributorRefundRetai
 	}
 
 	return tx.Commit(ctx)
+}
+
+func (q *Query) GetRevertHistoryPhone(phoneNumber string) (*[]structures.GetRevertHistory, error) {
+	query := `
+		SELECT revert_id, unique_id, name, phone, amount, created_at
+		FROM revert_history
+		WHERE phone_number=$1;
+	`
+	var revertHistories []structures.GetRevertHistory
+
+	res, err := q.Pool.Query(context.Background(), query, phoneNumber)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch revert history")
+	}
+	defer res.Close()
+
+	for res.Next() {
+		var revertHistrory structures.GetRevertHistory
+		if err := res.Scan(
+			&revertHistrory.RevertID,
+			&revertHistrory.UniqueID,
+			&revertHistrory.Name,
+			&revertHistrory.Phone,
+			&revertHistrory.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to fetch revert history")
+		}
+		revertHistories = append(revertHistories, revertHistrory)
+	}
+
+	if res.Err() != nil {
+		return nil, fmt.Errorf("failed to fetch revert history")
+	}
+	return &revertHistories, nil
+}
+
+func (q *Query) GetRevertHistory() (*[]structures.GetRevertHistory, error) {
+	query := `
+		SELECT revert_id, unique_id, name, phone, amount, created_at
+		FROM revert_history;
+	`
+	var revertHistories []structures.GetRevertHistory
+
+	res, err := q.Pool.Query(context.Background(), query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch revert history")
+	}
+	defer res.Close()
+
+	for res.Next() {
+		var revertHistrory structures.GetRevertHistory
+		if err := res.Scan(
+			&revertHistrory.RevertID,
+			&revertHistrory.UniqueID,
+			&revertHistrory.Name,
+			&revertHistrory.Phone,
+			&revertHistrory.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to fetch revert history")
+		}
+		revertHistories = append(revertHistories, revertHistrory)
+	}
+
+	if res.Err() != nil {
+		return nil, fmt.Errorf("failed to fetch revert history")
+	}
+	return &revertHistories, nil
 }
