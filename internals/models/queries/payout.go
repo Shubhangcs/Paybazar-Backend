@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/structures"
@@ -558,7 +559,7 @@ func (q *Query) PayoutFailure(req *structures.PayoutApiFailureResponse) error {
 
 func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLogs, error) {
 	query := `
-		SELECT operator_transaction_id, mobile_number,
+		SELECT payout_transaction_id,operator_transaction_id, mobile_number,
 		bank_name, beneficiary_name, amount, commision,
 		transfer_type, transaction_status, created_at::text, account_number
 		FROM payout_service
@@ -574,6 +575,7 @@ func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLog
 	for res.Next() {
 		var payoutTransaction structures.GetPayoutLogs
 		if err := res.Scan(
+			&payoutTransaction.PayoutTransactionID,
 			&payoutTransaction.TransactionID,
 			&payoutTransaction.PhoneNumber,
 			&payoutTransaction.BankName,
@@ -682,6 +684,7 @@ func (q *Query) PayoutTransactionRefund(req *structures.PayoutRefund) error {
 
 	tx, err := q.Pool.Begin(context.Background())
 	if err != nil {
+		log.Println(err)
 		return fmt.Errorf("failed to refund database error")
 	}
 	defer func() { _ = tx.Rollback(context.Background()) }()
@@ -696,6 +699,7 @@ func (q *Query) PayoutTransactionRefund(req *structures.PayoutRefund) error {
 		&transactionDetails.Amount,
 		&transactionDetails.Commission,
 	); err != nil {
+		log.Println(err)
 		return fmt.Errorf("failed to execuite transaction")
 	}
 
@@ -710,11 +714,13 @@ func (q *Query) PayoutTransactionRefund(req *structures.PayoutRefund) error {
 		&usersDetails.DistributorID,
 		&usersDetails.AdminID,
 	); err != nil {
+		log.Println(err)
 		return fmt.Errorf("failed to get user details")
 	}
 
 	aCut, err := tx.Exec(context.Background(), adminCutAmount, transactionDetails.Commission, usersDetails.AdminID)
 	if err != nil {
+		log.Println(err)
 		return fmt.Errorf("failed to execuite admin deduct transaction")
 	}
 
@@ -724,6 +730,7 @@ func (q *Query) PayoutTransactionRefund(req *structures.PayoutRefund) error {
 
 	mCut, err := tx.Exec(context.Background(), masterDistributorCutAmount, transactionDetails.Commission, usersDetails.MasterDistributorID)
 	if err != nil {
+		log.Println(err)
 		return fmt.Errorf("failed to execuite md deduct transaction")
 	}
 
@@ -733,6 +740,7 @@ func (q *Query) PayoutTransactionRefund(req *structures.PayoutRefund) error {
 
 	dCut, err := tx.Exec(context.Background(), distributorCutAmount, transactionDetails.Commission, usersDetails.DistributorID)
 	if err != nil {
+		log.Println(err)
 		return fmt.Errorf("failed to execuite md deduct transaction")
 	}
 
@@ -742,15 +750,18 @@ func (q *Query) PayoutTransactionRefund(req *structures.PayoutRefund) error {
 
 	_, err = tx.Exec(context.Background(), addAmountToUser, transactionDetails.Commission, transactionDetails.UserID, transactionDetails.Amount)
 	if err != nil {
+		log.Println(err)
 		return fmt.Errorf("failed to add amount to user")
 	}
 
 	_, err = tx.Exec(context.Background(), updateTransactionStatus, req.TransactionID)
 	if err != nil {
+		log.Println(err)
 		return fmt.Errorf("failed to update transaction status")
 	}
 
 	if err := tx.Commit(context.Background()); err != nil {
+		log.Println(err)
 		return fmt.Errorf("failed to commit transaction")
 	}
 	return nil

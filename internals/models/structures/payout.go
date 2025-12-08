@@ -52,6 +52,7 @@ type PayoutApiSuccessResponse struct {
 }
 
 type GetPayoutLogs struct {
+	PayoutTransactionID    string `json:"payout_transaction_id"`
 	TransactionID          string `json:"transaction_id"`
 	PhoneNumber            string `json:"phone_number"`
 	BankName               string `json:"bank_name"`
