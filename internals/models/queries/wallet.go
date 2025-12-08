@@ -406,7 +406,7 @@ func (q *Query) DistributorFundRetailer(req *structures.DistributorFundRetailerR
 
 func (q *Query) GetRevertHistoryPhone(phoneNumber string) (*[]structures.GetRevertHistory, error) {
 	query := `
-		SELECT revert_id, unique_id, name, phone, amount, created_at
+		SELECT revert_id::TEXT, unique_id, name, phone, amount, created_at
 		FROM revert_history
 		WHERE phone=$1;
 	`
@@ -414,6 +414,7 @@ func (q *Query) GetRevertHistoryPhone(phoneNumber string) (*[]structures.GetReve
 
 	res, err := q.Pool.Query(context.Background(), query, phoneNumber)
 	if err != nil {
+		log.Println(err)
 		return nil, fmt.Errorf("failed to fetch revert history")
 	}
 	defer res.Close()
@@ -427,12 +428,14 @@ func (q *Query) GetRevertHistoryPhone(phoneNumber string) (*[]structures.GetReve
 			&revertHistrory.Phone,
 			&revertHistrory.CreatedAt,
 		); err != nil {
+			log.Println(err)
 			return nil, fmt.Errorf("failed to fetch revert history")
 		}
 		revertHistories = append(revertHistories, revertHistrory)
 	}
 
 	if res.Err() != nil {
+		log.Println(err)
 		return nil, fmt.Errorf("failed to fetch revert history")
 	}
 	return &revertHistories, nil
@@ -440,7 +443,7 @@ func (q *Query) GetRevertHistoryPhone(phoneNumber string) (*[]structures.GetReve
 
 func (q *Query) GetRevertHistory() (*[]structures.GetRevertHistory, error) {
 	query := `
-		SELECT revert_id, unique_id, name, phone, amount, created_at
+		SELECT revert_id::TEXT, unique_id, name, phone, amount, created_at
 		FROM revert_history;
 	`
 	var revertHistories []structures.GetRevertHistory
