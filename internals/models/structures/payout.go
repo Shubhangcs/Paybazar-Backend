@@ -82,3 +82,7 @@ type PayoutUserDetails struct {
 	BankName   string `json:"bank_name"`
 	BranchName string `json:"branch_name"`
 }
+
+type PayoutRefund struct {
+	TransactionID string `json:"transaction_id"`
+}

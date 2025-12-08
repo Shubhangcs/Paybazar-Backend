@@ -266,3 +266,10 @@ func (pr *payoutRepo) VerifyAccountNumber(e echo.Context) (*structures.PayoutVer
 
 	return &resp, nil
 }
+
+func (pr *payoutRepo) RefundPayoutTransaction(transactionId string) error {
+	var req structures.PayoutRefund
+	req.TransactionID = transactionId
+
+	return pr.query.PayoutTransactionRefund(&req)
+}

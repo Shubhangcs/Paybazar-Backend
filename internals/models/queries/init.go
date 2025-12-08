@@ -170,8 +170,8 @@ func (qr *Query) InitializeDatabase() {
 		// ============================================================
 		`CREATE TABLE IF NOT EXISTS payout_service (
 			payout_transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			operator_transaction_id TEXT,
-			order_id TEXT,
+			operator_transaction_id TEXT DEFAULT '',
+			order_id TEXT DEFAULT '',
 			user_id UUID NOT NULL,
 			mobile_number TEXT NOT NULL,
 			account_number TEXT NOT NULL,
@@ -181,8 +181,8 @@ func (qr *Query) InitializeDatabase() {
 			amount NUMERIC(20,2) NOT NULL DEFAULT 0,
 			commision NUMERIC(20,2) NOT NULL DEFAULT 0,
 			transfer_type TEXT NOT NULL CHECK (transfer_type IN ('IMPS','NEFT')),
-			transaction_status TEXT NOT NULL CHECK (transaction_status IN ('PENDING','SUCCESS','FAILED')),
-			remarks TEXT,
+			transaction_status TEXT NOT NULL CHECK (transaction_status IN ('PENDING','SUCCESS','FAILED','REFUND')),
+			remarks TEXT DEFAULT '',
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE

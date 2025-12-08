@@ -56,3 +56,12 @@ func (ph *payoutHandler) VerifyPayoutAccountNumber(e echo.Context) error {
 	}
 	return e.JSON(http.StatusOK, res)
 }
+
+func (ph *payoutHandler) PayoutTransactionRefund(e echo.Context) error {
+	transactionId := e.Param("transaction_id")
+	err := ph.payoutRepo.RefundPayoutTransaction(transactionId)
+	if err != nil {
+		return payoutRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, "refund successfull")
+}

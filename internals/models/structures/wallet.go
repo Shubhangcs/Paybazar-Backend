@@ -58,3 +58,15 @@ type RefundRequest struct {
 	PhoneNumber string `json:"phone_number"`
 	Amount      string `json:"amount"`
 }
+
+type MasterDistributorRefundRetailerRequest struct {
+	MasterDistributorID string `json:"master_distributor_id"`
+	PhoneNumber         string `json:"phone_number"`
+	Amount              string `json:"amount"`
+}
+
+type DistributorRefundRetailerRequest struct {
+	DistributorID string `json:"distributor_id"`
+	PhoneNumber   string `json:"phone_number"`
+	Amount        string `json:"amount"`
+}

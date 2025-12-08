@@ -596,7 +596,6 @@ func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLog
 	return &payoutTransactions, nil
 }
 
-
 func (q *Query) DeductUserBalanceForVerification(userId string) error {
 	ctx := context.Background()
 	tx, err := q.Pool.Begin(ctx)
@@ -638,5 +637,121 @@ func (q *Query) DeductUserBalanceForVerification(userId string) error {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
+	return nil
+}
+
+func (q *Query) PayoutTransactionRefund(req *structures.PayoutRefund) error {
+	getUserDetailsQuery := `
+		SELECT user_id, amount, commission FROM payout_service WHERE payout_transaction_id=$1;
+	`
+	getAllIdsFromUser := `
+		SELECT master_distributor_id, distributor_id, admin_id FROM users WHERE user_id=$1;
+	`
+	adminCutAmount := `
+		WITH admin_commision AS(
+			SELECT ($1::numeric * 0.2917)::numeric AS amt
+		)
+		UPDATE admins SET admin_wallet_balance = admin_wallet_balance - (SELECT amt FROM admin_commision)
+		WHERE admin_id=$2 AND admin_wallet_balance >= (SELECT amt FROM admin_commision);
+	`
+	masterDistributorCutAmount := `
+		WITH master_distributor_commision AS(
+			SELECT ($1::NUMERIC *  0.0417)::numeric as amt
+		)
+		UPDATE master_distributors SET master_distributor_wallet_balance = master_distributor_wallet_balance - (SELECT amt FROM master_distributor_commision)
+		WHERE master_distributor_id=$2 AND master_distributor_wallet_balance >= (SELECT amt FROM master_distributor_commision);
+	`
+	distributorCutAmount := `
+		WITH distributor_commision AS(
+			SELECT ($1::NUMERIC * 0.1667)::numeric AS amt
+		)
+		UPDATE distributors SET distributor_wallet_balance = distributor_wallet_balance - (SELECT amt FROM distributor_commision)
+		WHERE distributor_id=$2 AND distributor_wallet_balance >= (SELECT amt FROM distributor_commision);
+	`
+	addAmountToUser := `
+		WITH user_commision_cut AS(
+			SELECT ($1::numeric * 0.5)::numeric - $1 AS amt
+		)
+		UPDATE users SET user_wallet_balance = user_wallet_balance + (SELECT amt FROM user_commision_cut) + $3::numeric
+		WHERE user_id=$2;
+	`
+	updateTransactionStatus := `
+		UPDATE payout_service SET transaction_status = 'REFUND'
+		WHERE payout_transaction_id=$1;
+	`
+
+	tx, err := q.Pool.Begin(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to refund database error")
+	}
+	defer func() { _ = tx.Rollback(context.Background()) }()
+
+	var transactionDetails struct {
+		UserID     string
+		Amount     string
+		Commission string
+	}
+	if err := tx.QueryRow(context.Background(), getUserDetailsQuery, req.TransactionID).Scan(
+		&transactionDetails.UserID,
+		&transactionDetails.Amount,
+		&transactionDetails.Commission,
+	); err != nil {
+		return fmt.Errorf("failed to execuite transaction")
+	}
+
+	var usersDetails struct {
+		MasterDistributorID string
+		DistributorID       string
+		AdminID             string
+	}
+
+	if err := tx.QueryRow(context.Background(), getAllIdsFromUser).Scan(
+		&usersDetails.MasterDistributorID,
+		&usersDetails.DistributorID,
+		&usersDetails.AdminID,
+	); err != nil {
+		return fmt.Errorf("failed to get user details")
+	}
+
+	aCut, err := tx.Exec(context.Background(), adminCutAmount, transactionDetails.Commission, usersDetails.AdminID)
+	if err != nil {
+		return fmt.Errorf("failed to execuite admin deduct transaction")
+	}
+
+	if aCut.RowsAffected() == 0 {
+		return fmt.Errorf("insufficient balance in admin")
+	}
+
+	mCut, err := tx.Exec(context.Background(), masterDistributorCutAmount, transactionDetails.Commission, usersDetails.MasterDistributorID)
+	if err != nil {
+		return fmt.Errorf("failed to execuite md deduct transaction")
+	}
+
+	if mCut.RowsAffected() == 0 {
+		return fmt.Errorf("insufficient balance in md")
+	}
+
+	dCut, err := tx.Exec(context.Background(), distributorCutAmount, transactionDetails.Commission, usersDetails.DistributorID)
+	if err != nil {
+		return fmt.Errorf("failed to execuite md deduct transaction")
+	}
+
+	if dCut.RowsAffected() == 0 {
+		return fmt.Errorf("insufficient balance in distributor")
+	}
+
+	_, err = tx.Exec(context.Background(), addAmountToUser, transactionDetails.Commission, transactionDetails.UserID, transactionDetails.Amount)
+	if err != nil {
+		return fmt.Errorf("failed to add amount to user")
+	}
+
+	_, err = tx.Exec(context.Background(), updateTransactionStatus, req.TransactionID)
+	if err != nil {
+		return fmt.Errorf("failed to update transaction status")
+	}
+
+	if err := tx.Commit(context.Background()); err != nil {
+		return fmt.Errorf("failed to commit transaction")
+	}
 	return nil
 }

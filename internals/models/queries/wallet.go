@@ -2,8 +2,8 @@ package queries
 
 import (
 	"context"
-	"time"
 	"fmt"
+	"time"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/structures"
 	"github.com/jackc/pgx/v5"
@@ -266,6 +266,82 @@ func (q *Query) DistributorRefund(req *structures.RefundRequest) error {
 
 	// 2. Credit admin wallet
 	if _, err := tx.Exec(ctx, updateAdminWalletBalanceQuery, req.Amount, req.AdminID); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (q *Query) MasterDistributorRefundRetailer(req *structures.MasterDistributorRefundRetailerRequest) error {
+	updateMdWalletBalanceQuery := `
+		UPDATE master_distributors
+		SET master_distributor_wallet_balance = master_distributor_wallet_balance + $1::NUMERIC
+		WHERE master_distributor_id = $2;
+	`
+	updateUserWalletBalanceQuery := `
+		UPDATE users
+		SET user_wallet_balance = user_wallet_balance - $1::NUMERIC
+		WHERE user_phone = $2 AND user_wallet_balance >= $1::NUMERIC;
+	`
+
+	ctx := context.Background()
+
+	tx, err := q.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Deduct from MD wallet
+	cmdTag, err := tx.Exec(ctx, updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("master distributor refund failed: insufficient balance or user not found")
+	}
+
+	// 2. Credit admin wallet
+	if _, err := tx.Exec(ctx, updateMdWalletBalanceQuery, req.Amount, req.MasterDistributorID); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (q *Query) DistributorRefundRetailer(req *structures.DistributorRefundRetailerRequest) error {
+	updateDistributorWalletBalanceQuery := `
+		UPDATE distributors
+		SET distributor_wallet_balance = distributor_wallet_balance + $1::NUMERIC
+		WHERE distributor_id = $2;
+	`
+	updateUserWalletBalanceQuery := `
+		UPDATE users
+		SET user_wallet_balance = user_wallet_balance - $1::NUMERIC
+		WHERE user_phone = $2 AND user_wallet_balance >= $1::NUMERIC;
+	`
+
+	ctx := context.Background()
+
+	tx, err := q.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Deduct from MD wallet
+	cmdTag, err := tx.Exec(ctx, updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("distributor refund failed: insufficient balance or user not found")
+	}
+
+	// 2. Credit admin wallet
+	if _, err := tx.Exec(ctx, updateDistributorWalletBalanceQuery, req.Amount, req.DistributorID); err != nil {
 		return err
 	}
 

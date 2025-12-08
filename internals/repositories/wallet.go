@@ -155,3 +155,26 @@ func (wr *walletRepo) DistributorRefund(e echo.Context) error {
 	}
 	return nil
 }
+
+
+func (wr *walletRepo) MasterDistributorRefundRetailer(e echo.Context) error {
+	var req structures.MasterDistributorRefundRetailerRequest
+	if err := wr.bindAndValidate(e, &req); err != nil {
+		return err
+	}
+	if err := wr.query.MasterDistributorRefundRetailer(&req); err != nil {
+		return fmt.Errorf("low balance")
+	}
+	return nil
+}
+
+func (wr *walletRepo) DistributorRefundRetailer(e echo.Context) error {
+	var req structures.DistributorRefundRetailerRequest
+	if err := wr.bindAndValidate(e, &req); err != nil {
+		return err
+	}
+	if err := wr.query.DistributorRefundRetailer(&req); err != nil {
+		return fmt.Errorf("low balance")
+	}
+	return nil
+}

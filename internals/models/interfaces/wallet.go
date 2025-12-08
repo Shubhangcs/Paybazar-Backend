@@ -15,4 +15,6 @@ type WalletInterface interface {
 	DistributorRefund(echo.Context) error
 	MasterDistributorRefund(echo.Context) error
 	UserRefund(echo.Context) error
+	MasterDistributorRefundRetailer(echo.Context) error
+	DistributorRefundRetailer(echo.Context) error
 }

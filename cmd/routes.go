@@ -111,6 +111,7 @@ func (r *Routes) MasterDistributorRoutes(rg *echo.Group) {
 	var walletHandler = handlers.NewWalletHandler(walletRepo)
 	rg.GET("/wallet/get/balance/:master_distributor_id", walletHandler.GetMasterDistributorWalletBalanceRequest)
 	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
+	rg.POST("/refund/retailer", walletHandler.MasterDistributorRefundRetailerRequest)
 }
 
 func (r *Routes) DistributorRoutes(rg *echo.Group) {
@@ -141,6 +142,7 @@ func (r *Routes) DistributorRoutes(rg *echo.Group) {
 	var walletHandler = handlers.NewWalletHandler(walletRepo)
 	rg.GET("/wallet/get/balance/:distributor_id", walletHandler.GetDistributorWalletBalanceRequest)
 	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
+	rg.POST("/refund/retailer", walletHandler.DistributorRefundRetailerRequest)
 }
 
 func (r *Routes) UserRoutes(rg *echo.Group) {
@@ -184,6 +186,7 @@ func (r *Routes) UserRoutes(rg *echo.Group) {
 	rg.POST("/payout", payoutHandler.PayoutRequest)
 	rg.GET("/payout/get/transactions/:user_id", payoutHandler.GetPayoutTransactionRequest)
 	rg.GET("/payout/:user_id/:phone/:account_number/:ifsc", payoutHandler.VerifyPayoutAccountNumber)
+	rg.GET("/payout/refund/:transaction_id" , payoutHandler.PayoutTransactionRefund)
 
 	// Bank Requests
 	var bankRepo = repositories.NewBankRepo(r.Query)
