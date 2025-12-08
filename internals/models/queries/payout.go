@@ -644,7 +644,7 @@ func (q *Query) DeductUserBalanceForVerification(userId string) error {
 
 func (q *Query) PayoutTransactionRefund(req *structures.PayoutRefund) error {
 	getUserDetailsQuery := `
-		SELECT user_id, amount, commission FROM payout_service WHERE payout_transaction_id=$1;
+		SELECT user_id, amount, commision FROM payout_service WHERE payout_transaction_id=$1;
 	`
 	getAllIdsFromUser := `
 		SELECT master_distributor_id, distributor_id, admin_id FROM users WHERE user_id=$1;
