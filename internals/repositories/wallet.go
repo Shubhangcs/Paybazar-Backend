@@ -167,6 +167,17 @@ func (wr *walletRepo) MasterDistributorFundRetailer(e echo.Context) error {
 	return nil
 }
 
+func (wr *walletRepo) MasterDistributorFundDistributor(e echo.Context) error {
+	var req structures.MasterDistributorFundRetailerRequest
+	if err := wr.bindAndValidate(e, &req); err != nil {
+		return err
+	}
+	if err := wr.query.MasterDistributorFundDistributor(&req); err != nil {
+		return fmt.Errorf("low balance")
+	}
+	return nil
+}
+
 func (wr *walletRepo) DistributorFundRetailer(e echo.Context) error {
 	var req structures.DistributorFundRetailerRequest
 	if err := wr.bindAndValidate(e, &req); err != nil {

@@ -207,7 +207,7 @@ func (q *Query) UserRefund(req *structures.RefundRequest) error {
 	}
 
 	if _, err := tx.Exec(ctx, addToHistory, req.PhoneNumber, req.Amount); err != nil {
-				log.Println(err)
+		log.Println(err)
 		return err
 	}
 
@@ -265,7 +265,7 @@ func (q *Query) MasterDistributorRefund(req *structures.RefundRequest) error {
 	}
 
 	if _, err := tx.Exec(ctx, addToHistory, req.PhoneNumber, req.Amount); err != nil {
-				log.Println(err)
+		log.Println(err)
 		return err
 	}
 
@@ -339,6 +339,43 @@ func (q *Query) MasterDistributorFundRetailer(req *structures.MasterDistributorF
 		SET user_wallet_balance = user_wallet_balance + $1::NUMERIC
 		WHERE user_phone = $2;
 	`
+	updateTransaction := `
+		WITH md_details AS (
+			SELECT master_distributor_id, master_distributor_name
+			FROM master_distributors
+			WHERE master_distributor_id=$1
+		)
+		user_details AS (
+			SELECT user_id, user_name
+			FROM users
+			WHERE user_phone=$2
+		)
+		INSERT INTO transactions (
+			transactor_id,
+			receiver_id,
+			transactor_name,
+			receiver_name,
+			transactor_type,
+			receiver_type,
+			transaction_type,
+			transaction_service,
+			amount,
+			transaction_status,
+			remarks
+		) VALUES (
+			 (SELECT master_distributor_id FROM md_details),
+			 (SELECT user_id FROM user_details),
+			 (SELECT master_distributor_name FROM md_details),
+			 (SELECT user_name FROM user_details),
+			 'MASTER_DISTRIBUTOR',
+			 'USER',
+			 'DEBIT',
+			 'FUND_TRANSFER',
+			 $3,
+			 'SUCCESS',
+			 'FUND TRANSFER TO USER'
+		);
+	`
 
 	ctx := context.Background()
 
@@ -363,6 +400,89 @@ func (q *Query) MasterDistributorFundRetailer(req *structures.MasterDistributorF
 		return err
 	}
 
+	if _, err := tx.Exec(ctx, updateTransaction, req.MasterDistributorID, req.PhoneNumber, req.Amount); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (q *Query) MasterDistributorFundDistributor(req *structures.MasterDistributorFundRetailerRequest) error {
+	updateMdWalletBalanceQuery := `
+		UPDATE master_distributors
+		SET master_distributor_wallet_balance = master_distributor_wallet_balance - $1::NUMERIC
+		WHERE master_distributor_id = $2 AND master_distributor_wallet_balance >= $1::NUMERIC;
+	`
+	updateUserWalletBalanceQuery := `
+		UPDATE distributors
+		SET distributor_wallet_balance = distributor_wallet_balance + $1::NUMERIC
+		WHERE distributor_phone = $2;
+	`
+	updateTransaction := `
+		WITH md_details AS (
+			SELECT master_distributor_id, master_distributor_name
+			FROM master_distributors
+			WHERE master_distributor_id=$1
+		)
+		distributor_details AS (
+			SELECT distributor_id, distributor_name
+			FROM distributors
+			WHERE distributor_phone=$2
+		)
+		INSERT INTO transactions (
+			transactor_id,
+			receiver_id,
+			transactor_name,
+			receiver_name,
+			transactor_type,
+			receiver_type,
+			transaction_type,
+			transaction_service,
+			amount,
+			transaction_status,
+			remarks
+		) VALUES (
+			 (SELECT master_distributor_id FROM md_details),
+			 (SELECT distributor_id FROM distributor_details),
+			 (SELECT master_distributor_name FROM md_details),
+			 (SELECT distributor_name FROM distributor_details),
+			 'MASTER_DISTRIBUTOR',
+			 'DISTRIBUTOR',
+			 'DEBIT',
+			 'FUND_TRANSFER',
+			 $3,
+			 'SUCCESS',
+			 'FUND TRANSFER TO DISTRIBUTOR'
+		);
+	`
+
+	ctx := context.Background()
+
+	tx, err := q.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Deduct from MD wallet
+	cmdTag, err := tx.Exec(ctx, updateMdWalletBalanceQuery, req.Amount, req.MasterDistributorID)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("master distributor refund failed: insufficient balance or user not found")
+	}
+
+	// 2. Credit admin wallet
+	if _, err := tx.Exec(ctx, updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(ctx, updateTransaction, req.MasterDistributorID, req.PhoneNumber, req.Amount); err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
 }
 
@@ -376,6 +496,44 @@ func (q *Query) DistributorFundRetailer(req *structures.DistributorFundRetailerR
 		UPDATE users
 		SET user_wallet_balance = user_wallet_balance + $1::NUMERIC
 		WHERE user_phone = $2;
+	`
+
+	updateTransaction := `
+		WITH d_details AS (
+			SELECT distributor_id, distributor_name
+			FROM distributors
+			WHERE distributor_id=$1
+		)
+		user_details AS (
+			SELECT user_id, user_name
+			FROM users
+			WHERE user_phone=$2
+		)
+		INSERT INTO transactions (
+			transactor_id,
+			receiver_id,
+			transactor_name,
+			receiver_name,
+			transactor_type,
+			receiver_type,
+			transaction_type,
+			transaction_service,
+			amount,
+			transaction_status,
+			remarks
+		) VALUES (
+			 (SELECT distributor_id FROM d_details),
+			 (SELECT user_id FROM user_details),
+			 (SELECT distributor_name FROM d_details),
+			 (SELECT user_name FROM user_details),
+			 'DISTRIBUTOR',
+			 'USER',
+			 'DEBIT',
+			 'FUND_TRANSFER',
+			 $3,
+			 'SUCCESS',
+			 'FUND TRANSFER TO USER'
+		);
 	`
 
 	ctx := context.Background()
@@ -398,6 +556,10 @@ func (q *Query) DistributorFundRetailer(req *structures.DistributorFundRetailerR
 
 	// 2. Credit admin wallet
 	if _, err := tx.Exec(ctx, updateDistributorWalletBalanceQuery, req.Amount, req.DistributorID); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(ctx, updateTransaction, req.DistributorID, req.PhoneNumber, req.Amount); err != nil {
 		return err
 	}
 

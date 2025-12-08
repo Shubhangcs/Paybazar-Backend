@@ -256,7 +256,7 @@ func (qr *Query) InitializeDatabase() {
 			transactor_type TEXT NOT NULL CHECK (transactor_type IN ('ADMIN','MASTER_DISTRIBUTOR','DISTRIBUTOR','USER')),
 			receiver_type TEXT CHECK (receiver_type IN ('ADMIN','MASTER_DISTRIBUTOR','DISTRIBUTOR','USER')),
 			transaction_type TEXT NOT NULL CHECK (transaction_type IN ('CREDIT','DEBIT')),
-			transaction_service TEXT NOT NULL CHECK (transaction_service IN ('FUND_REQUEST','TOPUP','PAYOUT','COMMISSION')),
+			transaction_service TEXT NOT NULL CHECK (transaction_service IN ('FUND_REQUEST','TOPUP','PAYOUT','COMMISSION','FUND_TRANSFER')),
 			amount NUMERIC(20,2) NOT NULL CHECK (amount >= 0),
 			transaction_status TEXT CHECK (transaction_status IN ('PENDING','SUCCESS','FAILED')),
 			remarks TEXT,

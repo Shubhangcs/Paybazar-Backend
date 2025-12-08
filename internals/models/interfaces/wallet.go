@@ -19,4 +19,5 @@ type WalletInterface interface {
 	DistributorFundRetailer(echo.Context) error
 	GetRevertHistoryPhone(string) (*[]structures.GetRevertHistory, error)
 	GetRevertHistory() (*[]structures.GetRevertHistory, error)
+	MasterDistributorFundDistributor(echo.Context) error
 }

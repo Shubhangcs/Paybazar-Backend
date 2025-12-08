@@ -139,7 +139,18 @@ func (wh *walletHandler) MasterDistributorFundRetailerRequest(e echo.Context) er
 		return walletRespondWithError(e, err)
 	}
 	return e.JSON(http.StatusOK, structures.WalletResponse{
-		Message: "refund success",
+		Message: "fund success",
+		Status:  "success",
+	})
+}
+
+func (wh *walletHandler) MasterDistributorFundDistributorRequest(e echo.Context) error {
+	err := wh.walletRepo.MasterDistributorFundDistributor(e)
+	if err != nil {
+		return walletRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.WalletResponse{
+		Message: "fund success",
 		Status:  "success",
 	})
 }
@@ -150,7 +161,7 @@ func (wh *walletHandler) DistributorFundRetailerRequest(e echo.Context) error {
 		return walletRespondWithError(e, err)
 	}
 	return e.JSON(http.StatusOK, structures.WalletResponse{
-		Message: "refund success",
+		Message: "fund success",
 		Status:  "success",
 	})
 }
