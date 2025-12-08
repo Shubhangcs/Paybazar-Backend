@@ -406,7 +406,7 @@ func (q *Query) DistributorFundRetailer(req *structures.DistributorFundRetailerR
 
 func (q *Query) GetRevertHistoryPhone(phoneNumber string) (*[]structures.GetRevertHistory, error) {
 	query := `
-		SELECT revert_id::TEXT, unique_id, name, phone, amount, created_at
+		SELECT revert_id::TEXT, unique_id, name, phone, amount, created_at::TEXT
 		FROM revert_history
 		WHERE phone=$1;
 	`
@@ -444,7 +444,7 @@ func (q *Query) GetRevertHistoryPhone(phoneNumber string) (*[]structures.GetReve
 
 func (q *Query) GetRevertHistory() (*[]structures.GetRevertHistory, error) {
 	query := `
-		SELECT revert_id::TEXT, unique_id, name, phone, amount, created_at
+		SELECT revert_id::TEXT, unique_id, name, phone, amount, created_at::TEXT
 		FROM revert_history;
 	`
 	var revertHistories []structures.GetRevertHistory
