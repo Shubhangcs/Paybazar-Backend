@@ -57,6 +57,7 @@ type GetRevertHistory struct {
 	RevertID  string `json:"revert_id"`
 	UniqueID  string `json:"unique_id"`
 	Name      string `json:"name"`
+	Amount    string `json:"amount"`
 	Phone     string `json:"phone"`
 	CreatedAt string `json:"created_at"`
 }

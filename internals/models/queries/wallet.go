@@ -426,6 +426,7 @@ func (q *Query) GetRevertHistoryPhone(phoneNumber string) (*[]structures.GetReve
 			&revertHistrory.UniqueID,
 			&revertHistrory.Name,
 			&revertHistrory.Phone,
+			&revertHistrory.Amount,
 			&revertHistrory.CreatedAt,
 		); err != nil {
 			log.Println(err)
@@ -461,6 +462,7 @@ func (q *Query) GetRevertHistory() (*[]structures.GetRevertHistory, error) {
 			&revertHistrory.UniqueID,
 			&revertHistrory.Name,
 			&revertHistrory.Phone,
+			&revertHistrory.Amount,
 			&revertHistrory.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to fetch revert history")
