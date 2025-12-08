@@ -344,7 +344,7 @@ func (q *Query) MasterDistributorFundRetailer(req *structures.MasterDistributorF
 			SELECT master_distributor_id, master_distributor_name
 			FROM master_distributors
 			WHERE master_distributor_id=$1
-		)
+		),
 		user_details AS (
 			SELECT user_id, user_name
 			FROM users
