@@ -196,3 +196,36 @@ func (wr *walletRepo) GetRevertHistoryPhone(phoneNumber string) (*[]structures.G
 func (wr *walletRepo) GetRevertHistory() (*[]structures.GetRevertHistory, error) {
 	return wr.query.GetRevertHistory()
 }
+
+func (wr *walletRepo) MasterDistributorRefundUser(e echo.Context) error {
+	var req structures.MasterDistributorFundRetailerRequest
+	if err := wr.bindAndValidate(e, &req); err != nil {
+		return err
+	}
+	if err := wr.query.MDUserRefund(&req); err != nil {
+		return fmt.Errorf("low balance")
+	}
+	return nil
+}
+
+func (wr *walletRepo) MasterDistributorRefundDistributor(e echo.Context) error {
+	var req structures.MasterDistributorFundRetailerRequest
+	if err := wr.bindAndValidate(e, &req); err != nil {
+		return err
+	}
+	if err := wr.query.MDDistributorRefund(&req); err != nil {
+		return fmt.Errorf("low balance")
+	}
+	return nil
+}
+
+func (wr *walletRepo) DistributorRefundRetailer(e echo.Context) error {
+	var req structures.DistributorFundRetailerRequest
+	if err := wr.bindAndValidate(e, &req); err != nil {
+		return err
+	}
+	if err := wr.query.DistributorUserRefund(&req); err != nil {
+		return fmt.Errorf("low balance")
+	}
+	return nil
+}

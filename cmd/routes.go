@@ -115,6 +115,8 @@ func (r *Routes) MasterDistributorRoutes(rg *echo.Group) {
 	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
 	rg.POST("/fund/retailer", walletHandler.MasterDistributorFundRetailerRequest)
 	rg.POST("/fund/distributor" , walletHandler.MasterDistributorFundDistributorRequest)
+	rg.POST("/refund/retailer" , walletHandler.MasterDistributorRefundUserRequest)
+	rg.POST("/refund/distributor" , walletHandler.MasterDistributorRefundDistributorRequest)
 }
 
 func (r *Routes) DistributorRoutes(rg *echo.Group) {
@@ -146,6 +148,7 @@ func (r *Routes) DistributorRoutes(rg *echo.Group) {
 	rg.GET("/wallet/get/balance/:distributor_id", walletHandler.GetDistributorWalletBalanceRequest)
 	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
 	rg.POST("/fund/retailer", walletHandler.DistributorFundRetailerRequest)
+	rg.POST("/refund/retailer" , walletHandler.DistributorRefundUserRequest)
 }
 
 func (r *Routes) UserRoutes(rg *echo.Group) {

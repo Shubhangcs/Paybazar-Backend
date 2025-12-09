@@ -328,6 +328,177 @@ func (q *Query) DistributorRefund(req *structures.RefundRequest) error {
 	return tx.Commit(ctx)
 }
 
+func (q *Query) MDUserRefund(req *structures.MasterDistributorFundRetailerRequest) error {
+	updateMdWalletBalanceQuery := `
+		UPDATE master_distributors
+		SET master_distributor_wallet_balance = master_distributor_wallet_balance + $1::NUMERIC
+		WHERE master_distributor_id = $2;
+	`
+	updateAdminWalletBalanceQuery := `
+		UPDATE users
+		SET user_wallet_balance = user_wallet_balance - $1::NUMERIC
+		WHERE user_phone = $2  AND user_wallet_balance >= $1::NUMERIC;
+	`
+
+	addToHistory := `
+		WITH user_details AS(
+			SELECT user_unique_id, user_name, user_phone
+			FROM users WHERE user_phone=$1
+		)
+		INSERT INTO revert_history(unique_id,name,phone,amount)
+		VALUES(
+			(SELECT user_unique_id FROM user_details),
+			(SELECT user_name FROM user_details),
+			(SELECT user_phone FROM user_details),
+			$2
+		);
+	`
+
+	ctx := context.Background()
+
+	tx, err := q.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Deduct from MD wallet
+	cmdTag, err := tx.Exec(ctx, updateAdminWalletBalanceQuery, req.Amount, req.PhoneNumber)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("master distributor refund failed: insufficient balance or user not found")
+	}
+
+	// 2. Credit admin wallet
+	if _, err := tx.Exec(ctx, updateMdWalletBalanceQuery, req.Amount, req.MasterDistributorID); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(ctx, addToHistory, req.PhoneNumber, req.Amount); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (q *Query) MDDistributorRefund(req *structures.MasterDistributorFundRetailerRequest) error {
+	updateMdWalletBalanceQuery := `
+		UPDATE master_distributors
+		SET master_distributor_wallet_balance = master_distributor_wallet_balance + $1::NUMERIC
+		WHERE master_distributor_id = $2;
+	`
+	updateAdminWalletBalanceQuery := `
+		UPDATE distributors
+		SET distributor_wallet_balance = distributor_wallet_balance - $1::NUMERIC
+		WHERE distributor_phone = $2  AND distributor_wallet_balance >= $1::NUMERIC;
+	`
+
+	addToHistory := `
+		WITH distributor_details AS(
+			SELECT distributor_unique_id, distributor_name, distributor_phone
+			FROM distributors WHERE distributor_phone=$1
+		)
+		INSERT INTO revert_history(unique_id,name,phone,amount)
+		VALUES(
+			(SELECT distributor_unique_id FROM distributor_details),
+			(SELECT distributor_name FROM distributor_details),
+			(SELECT distributor_phone FROM distributor_details),
+			$2
+		);
+	`
+
+	ctx := context.Background()
+
+	tx, err := q.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Deduct from MD wallet
+	cmdTag, err := tx.Exec(ctx, updateAdminWalletBalanceQuery, req.Amount, req.PhoneNumber)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("master distributor refund failed: insufficient balance or distributor not found")
+	}
+
+	// 2. Credit admin wallet
+	if _, err := tx.Exec(ctx, updateMdWalletBalanceQuery, req.Amount, req.MasterDistributorID); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(ctx, addToHistory, req.PhoneNumber, req.Amount); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (q *Query) DistributorUserRefund(req *structures.DistributorFundRetailerRequest) error {
+	updateMdWalletBalanceQuery := `
+		UPDATE distributors
+		SET distributor_wallet_balance = distributor_wallet_balance + $1::NUMERIC
+		WHERE distributor_id = $2;
+	`
+	updateAdminWalletBalanceQuery := `
+		UPDATE users
+		SET user_wallet_balance = user_wallet_balance - $1::NUMERIC
+		WHERE user_phone = $2  AND user_wallet_balance >= $1::NUMERIC;
+	`
+
+	addToHistory := `
+		WITH user_details AS(
+			SELECT user_unique_id, user_name, user_phone
+			FROM users WHERE user_phone=$1
+		)
+		INSERT INTO revert_history(unique_id,name,phone,amount)
+		VALUES(
+			(SELECT user_unique_id FROM user_details),
+			(SELECT user_name FROM user_details),
+			(SELECT user_phone FROM user_details),
+			$2
+		);
+	`
+
+	ctx := context.Background()
+
+	tx, err := q.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Deduct from MD wallet
+	cmdTag, err := tx.Exec(ctx, updateAdminWalletBalanceQuery, req.Amount, req.PhoneNumber)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("master distributor refund failed: insufficient balance or user not found")
+	}
+
+	// 2. Credit admin wallet
+	if _, err := tx.Exec(ctx, updateMdWalletBalanceQuery, req.Amount, req.DistributorID); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(ctx, addToHistory, req.PhoneNumber, req.Amount); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
 func (q *Query) MasterDistributorFundRetailer(req *structures.MasterDistributorFundRetailerRequest) error {
 	updateMdWalletBalanceQuery := `
 		UPDATE master_distributors

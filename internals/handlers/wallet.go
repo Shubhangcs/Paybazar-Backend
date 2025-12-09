@@ -189,3 +189,39 @@ func (wh *walletHandler) GetRevertHistoryPhone(e echo.Context) error {
 		Data:    map[string]any{"revert_history": res},
 	})
 }
+
+func (wh *walletHandler) MasterDistributorRefundDistributorRequest(e echo.Context) error {
+	err := wh.walletRepo.MasterDistributorRefundDistributor(e)
+	if err != nil {
+		return walletRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.WalletResponse{
+		Message: "refund success",
+		Status:  "success",
+	})
+}
+
+func (wh *walletHandler) MasterDistributorRefundUserRequest(e echo.Context) error {
+	err := wh.walletRepo.MasterDistributorRefundUser(e)
+	if err != nil {
+		return walletRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.WalletResponse{
+		Message: "refund success",
+		Status:  "success",
+	})
+}
+
+
+func (wh *walletHandler) DistributorRefundUserRequest(e echo.Context) error {
+	err := wh.walletRepo.DistributorRefundRetailer(e)
+	if err != nil {
+		return walletRespondWithError(e, err)
+	}
+	return e.JSON(http.StatusOK, structures.WalletResponse{
+		Message: "refund success",
+		Status:  "success",
+	})
+}
+
+
