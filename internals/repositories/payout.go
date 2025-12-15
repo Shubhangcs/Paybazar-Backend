@@ -32,7 +32,7 @@ func NewPayoutRepository(query *queries.Query, jwtUtils *pkg.JwtUtils) *payoutRe
 	}
 }
 
-func (pr *payoutRepo) bindAndValidate(e echo.Context, v interface{}) error {
+func (pr *payoutRepo) bindAndValidate(e echo.Context, v any) error {
 	if err := e.Bind(v); err != nil {
 		return echo.NewHTTPError(400, "Invalid request format")
 	}
@@ -67,16 +67,6 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 	if !hasBalance {
 		return "", echo.NewHTTPError(400, "Insufficient balance")
 	}
-
-	// Check Payout Limit
-	// hasNotExceeded, err := pr.query.CheckPayoutLimit(req.UserID, req.Amount)
-	// if err != nil {
-	// 	log.Println("DB check payout limit error:", err)
-	// 	return "", echo.NewHTTPError(500, "Failed to verify payout limit")
-	// }
-	// if !hasNotExceeded {
-	// 	return "", echo.NewHTTPError(400, "Payout limit exceeded")
-	// }
 
 	// Check MPIN
 	hasMpin, err := pr.query.CheckMpin(req.UserID, req.MPIN)
@@ -144,42 +134,14 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 		return "", echo.NewHTTPError(502, "Failed to read payout provider response")
 	}
 
-	var base struct {
-		Error int `json:"error"`
+	var payoutFinal structures.PayoutFinal
+
+	if err := json.Unmarshal(respBytes, &payoutFinal); err != nil {
+		return "", err
 	}
 
-	if err := json.Unmarshal(respBytes, &base); err != nil {
-		log.Println("unmarshal base response error:", err, "response:", string(respBytes))
-		return "", echo.NewHTTPError(502, "Unexpected response from payout provider")
-	}
-
-	if base.Error != 0 {
-		var apiFailureResponse structures.PayoutApiFailureResponse
-		if err := json.Unmarshal(respBytes, &apiFailureResponse); err != nil {
-			// still log the raw response for debugging
-			log.Println("unmarshal failure response error:", err, "response:", string(respBytes))
-			return "", echo.NewHTTPError(502, "Payout provider returned an error")
-		}
-		// attach our partner request id to failure record and persist
-		apiFailureResponse.PayoutTransactionID = apiReqBody.PartnerRequestID
-		if err := pr.query.PayoutFailure(&apiFailureResponse); err != nil {
-			log.Println("DB record payout failure error:", err)
-			// don't expose DB internals — but report provider error to client
-			return "", echo.NewHTTPError(502, "Payout failed")
-		}
-		return "", echo.NewHTTPError(502, "Payout failed")
-	}
-
-	var apiSuccessResponse structures.PayoutApiSuccessResponse
-	if err := json.Unmarshal(respBytes, &apiSuccessResponse); err != nil {
-		log.Println("unmarshal success response error:", err, "response:", string(respBytes))
-		return "", echo.NewHTTPError(502, "Unexpected response from payout provider")
-	}
-
-	if err := pr.query.PayoutSuccess(&apiSuccessResponse); err != nil {
-		log.Println("DB update payout success error:", err)
-		// We successfully reached provider but failed to persist; still inform user provider succeeded.
-		return "", echo.NewHTTPError(500, "Payout succeeded but saving status failed")
+	if err := pr.query.FinalPayout(&payoutFinal); err != nil {
+		return "", err
 	}
 
 	return "Transaction successful", nil

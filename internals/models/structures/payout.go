@@ -42,6 +42,13 @@ type PayoutApiRequest struct {
 	TransferType     string `json:"transfer_type"`
 }
 
+type PayoutFinal struct {
+	Status                int    `json:"status"`
+	OpertaorTransactionID string `json:"optransid"`
+	OrderID               string `json:"orderid"`
+	PartnerRequestID      string `json:"partnerreqid"`
+}
+
 type PayoutApiSuccessResponse struct {
 	Error                 int    `json:"error"`
 	Message               string `json:"msg"`
