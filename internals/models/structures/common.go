@@ -70,6 +70,7 @@ type UserGetResponse struct {
 	UserEmail         string `json:"user_email"`
 	UserPhone         string `json:"user_phone"`
 	UserWalletBalance string `json:"user_wallet_balance"`
+	DistributorID     string `json:"distributor_id"`
 }
 
 type CommonResponse struct {

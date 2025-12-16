@@ -163,7 +163,8 @@ func (q *Query) GetAllUsersByAdminID(adminId string) (*[]structures.UserGetRespo
 			user_name,
 			user_email,
 			user_phone,
-			user_wallet_balance
+			user_wallet_balance,
+			distributor_id
 		FROM
 			users
 		WHERE
@@ -191,6 +192,7 @@ func (q *Query) GetAllUsersByAdminID(adminId string) (*[]structures.UserGetRespo
 			&r.UserEmail,
 			&r.UserPhone,
 			&r.UserWalletBalance,
+			&r.DistributorID,
 		); err != nil {
 			return nil, err
 		}
