@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/Srujankm12/paybazar-api/internals/models/interfaces"
@@ -226,6 +227,7 @@ func (wh *walletHandler) DistributorRefundUserRequest(e echo.Context) error {
 func (wh *walletHandler) UpdateTransactionStatus(e echo.Context) error {
 	err := wh.walletRepo.UpdatePayoutTransaction(e)
 	if err != nil {
+		log.Println(err)
 		return walletRespondWithError(e, err)
 	}
 	return e.JSON(http.StatusOK, structures.WalletResponse{
