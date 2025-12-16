@@ -229,3 +229,14 @@ func (wr *walletRepo) DistributorRefundRetailer(e echo.Context) error {
 	}
 	return nil
 }
+
+func (wr *walletRepo) UpdatePayoutTransaction(e echo.Context) error {
+	var req structures.UpdatePayoutTransaction
+	if err := wr.bindAndValidate(e, &req); err != nil {
+		return err
+	}
+	if err := wr.query.UpdatePayoutTransaction(&req); err != nil {
+		return err
+	}
+	return nil
+}

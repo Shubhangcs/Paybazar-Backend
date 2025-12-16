@@ -62,8 +62,9 @@ func (r *Routes) AdminRoutes(rg *echo.Group) {
 	rg.POST("/user/wallet/refund", walletHandler.UserRefundRequest)
 	rg.POST("/md/wallet/refund", walletHandler.MasterDistributorRefundRequest)
 	rg.POST("/distributor/wallet/refund", walletHandler.DistributorRefundRequest)
-	rg.GET("/revert/get/history" , walletHandler.GetRevertHistory)
-	rg.GET("/revert/get/history/:phone_number" , walletHandler.GetRevertHistoryPhone)
+	rg.GET("/revert/get/history", walletHandler.GetRevertHistory)
+	rg.GET("/revert/get/history/:phone_number", walletHandler.GetRevertHistoryPhone)
+	rg.POST("/update/payout/request", walletHandler.UpdateTransactionStatus)
 
 	// Common Request
 	var commonRepo = repositories.NewCommonRepository(
@@ -114,9 +115,9 @@ func (r *Routes) MasterDistributorRoutes(rg *echo.Group) {
 	rg.GET("/wallet/get/balance/:master_distributor_id", walletHandler.GetMasterDistributorWalletBalanceRequest)
 	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
 	rg.POST("/fund/retailer", walletHandler.MasterDistributorFundRetailerRequest)
-	rg.POST("/fund/distributor" , walletHandler.MasterDistributorFundDistributorRequest)
-	rg.POST("/refund/retailer" , walletHandler.MasterDistributorRefundUserRequest)
-	rg.POST("/refund/distributor" , walletHandler.MasterDistributorRefundDistributorRequest)
+	rg.POST("/fund/distributor", walletHandler.MasterDistributorFundDistributorRequest)
+	rg.POST("/refund/retailer", walletHandler.MasterDistributorRefundUserRequest)
+	rg.POST("/refund/distributor", walletHandler.MasterDistributorRefundDistributorRequest)
 }
 
 func (r *Routes) DistributorRoutes(rg *echo.Group) {
@@ -148,7 +149,7 @@ func (r *Routes) DistributorRoutes(rg *echo.Group) {
 	rg.GET("/wallet/get/balance/:distributor_id", walletHandler.GetDistributorWalletBalanceRequest)
 	rg.GET("/wallet/get/transactions/:id", walletHandler.GetTransactionsRequest)
 	rg.POST("/fund/retailer", walletHandler.DistributorFundRetailerRequest)
-	rg.POST("/refund/retailer" , walletHandler.DistributorRefundUserRequest)
+	rg.POST("/refund/retailer", walletHandler.DistributorRefundUserRequest)
 }
 
 func (r *Routes) UserRoutes(rg *echo.Group) {
@@ -159,7 +160,7 @@ func (r *Routes) UserRoutes(rg *echo.Group) {
 		r.PasswordUtils,
 		r.TwillioUtils,
 	)
-	
+
 	var authHandler = handlers.NewAuthHandler(authRepo)
 	rg.POST("/login/send/otp", authHandler.LoginUserSendOTPRequest)
 	rg.POST("/login/validate/otp", authHandler.LoginUserValidateOTPRequest)
@@ -193,7 +194,7 @@ func (r *Routes) UserRoutes(rg *echo.Group) {
 	rg.POST("/payout", payoutHandler.PayoutRequest)
 	rg.GET("/payout/get/transactions/:user_id", payoutHandler.GetPayoutTransactionRequest)
 	rg.GET("/payout/:user_id/:phone/:account_number/:ifsc", payoutHandler.VerifyPayoutAccountNumber)
-	rg.GET("/payout/refund/:transaction_id" , payoutHandler.PayoutTransactionRefund)
+	rg.GET("/payout/refund/:transaction_id", payoutHandler.PayoutTransactionRefund)
 
 	// Bank Requests
 	var bankRepo = repositories.NewBankRepo(r.Query)

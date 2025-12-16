@@ -23,4 +23,5 @@ type WalletInterface interface {
 	MasterDistributorRefundUser(echo.Context) error
 	MasterDistributorRefundDistributor(echo.Context) error
 	DistributorRefundRetailer(echo.Context) error 
+	UpdatePayoutTransaction(echo.Context) error
 }

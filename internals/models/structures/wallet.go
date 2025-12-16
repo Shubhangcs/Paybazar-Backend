@@ -79,3 +79,9 @@ type DistributorFundRetailerRequest struct {
 	PhoneNumber   string `json:"phone_number"`
 	Amount        string `json:"amount"`
 }
+
+type UpdatePayoutTransaction struct {
+	PayoutTransactionID   string `json:"payout_transaction_id"`
+	OperatorTransactionID string `json:"operator_transaction_id"`
+	Status                string `json:"status"`
+}

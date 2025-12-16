@@ -396,3 +396,18 @@ func (q *Query) PayoutTransactionRefund(req *structures.PayoutRefund) error {
 	}
 	return nil
 }
+
+func (q *Query) UpdatePayoutTransaction(req *structures.UpdatePayoutTransaction) error {
+	query := `
+		UPDATE payout_service SET
+		operator_transaction_id=$1,transaction_status=$2
+		WHERE payout_transaction_id=$3;
+	`
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	if _, err := q.Pool.Exec(ctx, query, req.OperatorTransactionID, req.Status, req.PayoutTransactionID); err != nil {
+		return err
+	}
+	return nil
+}
