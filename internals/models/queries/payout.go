@@ -33,14 +33,22 @@ func (q *Query) CheckMpin(userID string, mpin string) (bool, error) {
 }
 
 func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationRequest) (*structures.PayoutApiRequest, error) {
-	const checkCommisionExists = `
-		SELECT EXISTS(SELECT 1 FROM commisions WHERE user_id=$1) AS is_user_commision;
+
+	const getUserDetailsQuery = `
+		SELECT admin_id, master_distributor_id, distributor_id
+		FROM users
+		WHERE user_id=$1;
 	`
-	const commisions = `
+
+	const checkCommisionExists = `
+		SELECT EXISTS(SELECT 1 FROM commisions WHERE diatributor_id=$1) AS is_user_commision;
+	`
+
+	const getCommisions = `
 		SELECT admin_commision::TEXT, master_distributor_commision::TEXT,
 		distributor_commision::TEXT, user_commision::TEXT, commision::TEXT
 		FROM commisions
-		WHERE user_id=$1;
+		WHERE distributor_id=$1;
 	`
 
 	const insertPayoutTransactionQuery = `
@@ -71,11 +79,6 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 			WHEN UPPER(transfer_type) = 'IMPS' THEN '5'
 			WHEN UPPER(transfer_type) = 'NEFT' THEN '6'
 		END AS transfer_type;
-	`
-	const getUserDetailsQuery = `
-		SELECT admin_id, master_distributor_id, distributor_id
-		FROM users
-		WHERE user_id=$1;
 	`
 
 	const updateUserWalletBalance = `
@@ -111,12 +114,24 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 	}
 	defer tx.Rollback(ctx)
 
-	var hasCommision bool
-	if err := tx.QueryRow(ctx, checkCommisionExists, req.UserID).Scan(&hasCommision); err != nil {
+	var UserDetails struct {
+		adminID             string
+		masterDistributorID string
+		distributorID       string
+	}
+
+	if err := tx.QueryRow(ctx, getUserDetailsQuery, req.UserID).Scan(
+		&UserDetails.adminID,
+		&UserDetails.masterDistributorID,
+		&UserDetails.distributorID,
+	); err != nil {
 		return nil, err
 	}
 
-	var commision string
+	var hasCommision bool
+	if err := tx.QueryRow(ctx, checkCommisionExists, UserDetails.distributorID).Scan(&hasCommision); err != nil {
+		return nil, err
+	}
 
 	var Commision struct {
 		AdminCommision             string
@@ -132,7 +147,7 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 		Commision.DistributorCommision = "0.1667"
 		Commision.RetailerCommision = "0.50"
 	} else {
-		if err := tx.QueryRow(ctx, commisions, req.UserID).Scan(
+		if err := tx.QueryRow(ctx, getCommisions, UserDetails.distributorID).Scan(
 			&Commision.AdminCommision,
 			&Commision.MasterDistributorCommision,
 			&Commision.DistributorCommision,
@@ -142,6 +157,9 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 			return nil, err
 		}
 	}
+
+	var commision string
+
 	var res structures.PayoutApiRequest
 	if err := tx.QueryRow(
 		ctx,
@@ -166,19 +184,6 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 		&res.Amount,
 		&res.TransferType,
 		&commision,
-	); err != nil {
-		return nil, err
-	}
-
-	var UserDetails struct {
-		adminID             string
-		masterDistributorID string
-		distributorID       string
-	}
-	if err := tx.QueryRow(ctx, getUserDetailsQuery, req.UserID).Scan(
-		&UserDetails.adminID,
-		&UserDetails.masterDistributorID,
-		&UserDetails.distributorID,
 	); err != nil {
 		return nil, err
 	}
