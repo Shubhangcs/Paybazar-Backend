@@ -299,6 +299,17 @@ func (qr *Query) InitializeDatabase() {
 			message TEXT NOT NULL,
 			FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE
 		)`,
+		`CREATE TABLE IF NOT EXISTS commisions(
+			commision_id UUID DEFAULT gen_random_uuid(),
+			user_id UUID NOT NULL,
+			commision NUMERIC(20,2) DEFAULT 0,
+			admin_commision NUMERIC(20,2) DEFAULT 0,
+			master_distributor_commision NUMERIC(20,0) DEFAULT 0,
+			distributor_commision NUMERIC(20,2) DEFAULT 0,
+			user_commision NUMERIC(20,2) DEFAULT 0,
+			FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
 	}
 
 	tx, err := qr.Pool.BeginTx(ctx, pgx.TxOptions{})
