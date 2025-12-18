@@ -240,9 +240,13 @@ func (q *Query) FinalPayout(req *structures.PayoutFinal) error {
 
 func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLogs, error) {
 	query := `
+		WITH distributor_details AS(
+			SELECT distributor_id FROM users WHERE user_id=$1
+		)
 		SELECT payout_transaction_id,operator_transaction_id, mobile_number,
 		bank_name, beneficiary_name, amount, commision,
-		transfer_type, transaction_status, created_at::text, account_number
+		transfer_type, transaction_status, created_at::text, account_number,
+		distributor_details.distributor_id
 		FROM payout_service
 		WHERE user_id=$1;
 	`
@@ -267,6 +271,7 @@ func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLog
 			&payoutTransaction.TransactionStatus,
 			&payoutTransaction.TransactionDateAndTime,
 			&payoutTransaction.AccountNumber,
+			&payoutTransaction.DistributorID,
 		); err != nil {
 			return nil, err
 		}

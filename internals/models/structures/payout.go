@@ -70,6 +70,7 @@ type GetPayoutLogs struct {
 	TransactionStatus      string `json:"transaction_status"`
 	TransactionDateAndTime string `json:"transaction_date_and_time"`
 	AccountNumber          string `json:"account_number"`
+	DistributorID          string `json:"distributor_id"`
 }
 
 type PayoutApiFailureResponse struct {
