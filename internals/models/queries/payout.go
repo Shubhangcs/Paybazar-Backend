@@ -34,77 +34,6 @@ func (q *Query) CheckMpin(userID string, mpin string) (bool, error) {
 
 func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationRequest) (*structures.PayoutApiRequest, error) {
 
-	const getUserDetailsQuery = `
-		SELECT admin_id, master_distributor_id, distributor_id
-		FROM users
-		WHERE user_id=$1;
-	`
-
-	const checkCommisionExists = `
-		SELECT EXISTS(SELECT 1 FROM commisions WHERE distributor_id=$1) AS is_user_commision;
-	`
-
-	const getCommisions = `
-		SELECT admin_commision::TEXT, master_distributor_commision::TEXT,
-		distributor_commision::TEXT, user_commision::TEXT, commision::TEXT
-		FROM commisions
-		WHERE distributor_id=$1;
-	`
-
-	const insertPayoutTransactionQuery = `
-	INSERT INTO payout_service (
-		user_id,
-		mobile_number,
-		account_number,
-		ifsc_code,
-		bank_name,
-		beneficiary_name,
-		amount,
-		transfer_type,
-		transaction_status,
-		remarks,
-		commision
-	)
-	VALUES ($1,$2,$3,$4,$5,$6,$7,UPPER($8),'PENDING',$9,($7::NUMERIC * ($10::NUMERIC / 100::NUMERIC )))
-	RETURNING 
-		payout_transaction_id::TEXT,
-		mobile_number AS mobile_no,
-		account_number AS account_no,
-		ifsc_code AS ifsc,
-		bank_name,
-		beneficiary_name AS benificiary_name,
-		amount::TEXT,
-		commision,
-		CASE 
-			WHEN UPPER(transfer_type) = 'IMPS' THEN '5'
-			WHEN UPPER(transfer_type) = 'NEFT' THEN '6'
-		END AS transfer_type;
-	`
-
-	const updateUserWalletBalance = `
-		UPDATE users SET
-		user_wallet_balance = user_wallet_balance - ($1::NUMERIC + ($2::NUMERIC * $3::NUMERIC))
-		WHERE user_id=$4;
-	`
-
-	const updateDistributorWalletBalance = `
-		UPDATE distributors SET
-		distributor_wallet_balance = distributor_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
-		WHERE distributor_id=$3;
-	`
-
-	const updateMasterDistributorWalletBalance = `
-		UPDATE master_distributors SET
-		master_distributor_wallet_balance = master_distributor_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
-		WHERE master_distributor_id=$3;
-	`
-
-	const updateAdminWalletBalance = `
-		UPDATE admins SET
-		admin_wallet_balance = admin_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
-		WHERE admin_id=$3;
-	`
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -113,6 +42,12 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
+
+	const getUserDetailsQuery = `
+		SELECT admin_id, master_distributor_id, distributor_id
+		FROM users
+		WHERE user_id=$1;
+	`
 
 	var UserDetails struct {
 		adminID             string
@@ -127,6 +62,10 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 	); err != nil {
 		return nil, err
 	}
+
+	const checkCommisionExists = `
+		SELECT EXISTS(SELECT 1 FROM commisions WHERE distributor_id=$1) AS is_distributor_commision;
+	`
 
 	var hasCommision bool
 	if err := tx.QueryRow(ctx, checkCommisionExists, UserDetails.distributorID).Scan(&hasCommision); err != nil {
@@ -147,6 +86,13 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 		Commision.DistributorCommision = "0.1667"
 		Commision.RetailerCommision = "0.50"
 	} else {
+		const getCommisions = `
+			SELECT admin_commision::TEXT, master_distributor_commision::TEXT,
+			distributor_commision::TEXT, user_commision::TEXT, commision::TEXT
+			FROM commisions
+			WHERE distributor_id=$1;
+		`
+
 		if err := tx.QueryRow(ctx, getCommisions, UserDetails.distributorID).Scan(
 			&Commision.AdminCommision,
 			&Commision.MasterDistributorCommision,
@@ -158,8 +104,37 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 		}
 	}
 
-	var commision string
+	const insertPayoutTransactionQuery = `
+	INSERT INTO payout_service (
+		user_id,
+		mobile_number,
+		account_number,
+		ifsc_code,
+		bank_name,
+		beneficiary_name,
+		amount,
+		transfer_type,
+		transaction_status,
+		remarks,
+		commision
+	)
+	VALUES ($1,$2,$3,$4,$5,$6,$7,UPPER($8),'PENDING',$9,($7::NUMERIC * ($10::NUMERIC / 100::NUMERIC ))::NUMERIC)
+	RETURNING 
+		payout_transaction_id::TEXT,
+		mobile_number AS mobile_no,
+		account_number AS account_no,
+		ifsc_code AS ifsc,
+		bank_name,
+		beneficiary_name AS benificiary_name,
+		amount::TEXT,
+		commision,
+		CASE 
+			WHEN UPPER(transfer_type) = 'IMPS' THEN '5'
+			WHEN UPPER(transfer_type) = 'NEFT' THEN '6'
+		END AS transfer_type;
+	`
 
+	var commision string
 	var res structures.PayoutApiRequest
 	if err := tx.QueryRow(
 		ctx,
@@ -188,17 +163,45 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 		return nil, err
 	}
 
+	log.Println(res)
+	log.Println(commision)
+	log.Println(Commision)
+
+	const updateUserWalletBalance = `
+		UPDATE users SET
+		user_wallet_balance = user_wallet_balance - ($1::NUMERIC + ($2::NUMERIC * $3::NUMERIC))
+		WHERE user_id=$4;
+	`
+
 	if _, err := tx.Exec(ctx, updateUserWalletBalance, req.Amount, commision, Commision.RetailerCommision, req.UserID); err != nil {
 		return nil, err
 	}
+
+	const updateAdminWalletBalance = `
+		UPDATE admins SET
+		admin_wallet_balance = admin_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
+		WHERE admin_id=$3;
+	`
 
 	if _, err := tx.Exec(ctx, updateAdminWalletBalance, commision, Commision.AdminCommision, UserDetails.adminID); err != nil {
 		return nil, err
 	}
 
+	const updateMasterDistributorWalletBalance = `
+		UPDATE master_distributors SET
+		master_distributor_wallet_balance = master_distributor_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
+		WHERE master_distributor_id=$3;
+	`
+
 	if _, err := tx.Exec(ctx, updateMasterDistributorWalletBalance, commision, Commision.MasterDistributorCommision, UserDetails.masterDistributorID); err != nil {
 		return nil, err
 	}
+
+	const updateDistributorWalletBalance = `
+		UPDATE distributors SET
+		distributor_wallet_balance = distributor_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
+		WHERE distributor_id=$3;
+	`
 
 	if _, err := tx.Exec(ctx, updateDistributorWalletBalance, commision, Commision.DistributorCommision, UserDetails.distributorID); err != nil {
 		return nil, err
