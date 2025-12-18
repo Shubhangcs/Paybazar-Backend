@@ -41,7 +41,7 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 	`
 
 	const checkCommisionExists = `
-		SELECT EXISTS(SELECT 1 FROM commisions WHERE diatributor_id=$1) AS is_user_commision;
+		SELECT EXISTS(SELECT 1 FROM commisions WHERE distributor_id=$1) AS is_user_commision;
 	`
 
 	const getCommisions = `
