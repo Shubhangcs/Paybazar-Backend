@@ -240,15 +240,28 @@ func (q *Query) FinalPayout(req *structures.PayoutFinal) error {
 
 func (q *Query) GetPayoutTransactions(userId string) (*[]structures.GetPayoutLogs, error) {
 	query := `
-		WITH distributor_details AS(
-			SELECT distributor_id FROM users WHERE user_id=$1
-		)
-		SELECT payout_transaction_id,operator_transaction_id, mobile_number,
-		bank_name, beneficiary_name, amount, commision,
-		transfer_type, transaction_status, created_at::text, account_number,
-		distributor_details.distributor_id
-		FROM payout_service
-		WHERE user_id=$1;
+		WITH distributor_details AS (
+    SELECT distributor_id
+    FROM users
+    WHERE user_id = $1
+)
+SELECT 
+    ps.payout_transaction_id,
+    ps.operator_transaction_id,
+    ps.mobile_number,
+    ps.bank_name,
+    ps.beneficiary_name,
+    ps.amount,
+    ps.commision,
+    ps.transfer_type,
+    ps.transaction_status,
+    ps.created_at::text,
+    ps.account_number,
+    dd.distributor_id
+FROM payout_service ps
+JOIN distributor_details dd ON true
+WHERE ps.user_id = $1;
+
 	`
 	res, err := q.Pool.Query(context.Background(), query, userId)
 	if err != nil {
