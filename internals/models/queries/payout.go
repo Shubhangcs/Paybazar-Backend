@@ -157,8 +157,8 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 		&res.BankName,
 		&res.BeneficiaryName,
 		&res.Amount,
-		&res.TransferType,
 		&commision,
+		&res.TransferType,
 	); err != nil {
 		return nil, err
 	}
