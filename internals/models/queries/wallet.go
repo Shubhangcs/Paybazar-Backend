@@ -724,7 +724,7 @@ func (q *Query) DistributorFundRetailer(req *structures.DistributorFundRetailerR
 	defer tx.Rollback(ctx)
 
 	// 1. Deduct from MD wallet
-	cmdTag, err := tx.Exec(ctx, updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber)
+	cmdTag, err := tx.Exec(ctx, updateDistributorWalletBalanceQuery, req.Amount, req.DistributorID)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -735,7 +735,7 @@ func (q *Query) DistributorFundRetailer(req *structures.DistributorFundRetailerR
 	}
 
 	// 2. Credit admin wallet
-	if _, err := tx.Exec(ctx, updateDistributorWalletBalanceQuery, req.Amount, req.DistributorID); err != nil {
+	if _, err := tx.Exec(ctx, updateUserWalletBalanceQuery, req.Amount, req.PhoneNumber); err != nil {
 		log.Println(err)
 		return err
 	}

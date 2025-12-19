@@ -371,7 +371,7 @@ func (q *Query) PayoutTransactionRefund(req *structures.PayoutRefund) error {
 	`
 	addAmountToUser := `
 		WITH user_commision_cut AS(
-			SELECT ($1::numeric * 0.5)::numeric - $1 AS amt
+			SELECT ($1::numeric * 0.5)::numeric AS amt
 		)
 		UPDATE users SET user_wallet_balance = user_wallet_balance + (SELECT amt FROM user_commision_cut) + $3::numeric
 		WHERE user_id=$2;
