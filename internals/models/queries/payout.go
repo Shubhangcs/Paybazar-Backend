@@ -64,11 +64,11 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 	}
 
 	const checkCommisionExists = `
-		SELECT EXISTS(SELECT 1 FROM commisions WHERE distributor_id=$1) AS is_distributor_commision;
+		SELECT EXISTS(SELECT 1 FROM commisions WHERE user_id=$1) AS is_user_commision;
 	`
 
 	var hasCommision bool
-	if err := tx.QueryRow(ctx, checkCommisionExists, UserDetails.distributorID).Scan(&hasCommision); err != nil {
+	if err := tx.QueryRow(ctx, checkCommisionExists, req.UserID).Scan(&hasCommision); err != nil {
 		return nil, err
 	}
 
@@ -90,10 +90,10 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 			SELECT admin_commision::TEXT, master_distributor_commision::TEXT,
 			distributor_commision::TEXT, user_commision::TEXT, commision::TEXT
 			FROM commisions
-			WHERE distributor_id=$1;
+			WHERE user_id=$1;
 		`
 
-		if err := tx.QueryRow(ctx, getCommisions, UserDetails.distributorID).Scan(
+		if err := tx.QueryRow(ctx, getCommisions, req.UserID).Scan(
 			&Commision.AdminCommision,
 			&Commision.MasterDistributorCommision,
 			&Commision.DistributorCommision,
