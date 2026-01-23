@@ -95,3 +95,26 @@ type PayoutUserDetails struct {
 type PayoutRefund struct {
 	TransactionID string `json:"transaction_id"`
 }
+
+type PayoutReportResponse struct {
+	PayoutTransactionID string `json:"payout_transaction_id"`
+
+	UserID          string `json:"user_id"`
+	MobileNumber    string `json:"mobile_number"`
+	AccountNumber   string `json:"account_number"`
+	IFSCCode        string `json:"ifsc_code"`
+	BankName        string `json:"bank_name"`
+	BeneficiaryName string `json:"beneficiary_name"`
+
+	Amount           string `json:"amount"`
+	Commission       string `json:"commission"`
+	TransferType     string `json:"transfer_type"`
+	TransactionStatus string `json:"transaction_status"`
+	Remarks          string `json:"remarks"`
+
+	BeforeBalance string `json:"before_balance"`
+	AfterBalance  string `json:"after_balance"`
+
+	CreatedAt string `json:"created_at"`
+}
+

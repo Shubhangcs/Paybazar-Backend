@@ -32,7 +32,9 @@ func (q *Query) CheckMpin(userID string, mpin string) (bool, error) {
 	return hasMpin, err
 }
 
-func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationRequest) (*structures.PayoutApiRequest, error) {
+func (q *Query) InitilizePayoutRequest(
+	req *structures.PayoutInitilizationRequest,
+) (*structures.PayoutApiRequest, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -43,102 +45,132 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 	}
 	defer tx.Rollback(ctx)
 
+	/* -------------------------------- USER HIERARCHY -------------------------------- */
+
 	const getUserDetailsQuery = `
 		SELECT admin_id, master_distributor_id, distributor_id
 		FROM users
 		WHERE user_id=$1;
 	`
 
-	var UserDetails struct {
+	var userDetails struct {
 		adminID             string
 		masterDistributorID string
 		distributorID       string
 	}
 
 	if err := tx.QueryRow(ctx, getUserDetailsQuery, req.UserID).Scan(
-		&UserDetails.adminID,
-		&UserDetails.masterDistributorID,
-		&UserDetails.distributorID,
+		&userDetails.adminID,
+		&userDetails.masterDistributorID,
+		&userDetails.distributorID,
 	); err != nil {
 		return nil, err
 	}
 
+	/* -------------------------------- COMMISSION -------------------------------- */
+
 	const checkCommisionExists = `
-		SELECT EXISTS(SELECT 1 FROM commisions WHERE user_id=$1) AS is_user_commision;
+		SELECT EXISTS (SELECT 1 FROM commisions WHERE user_id=$1);
 	`
 
-	var hasCommision bool
-	if err := tx.QueryRow(ctx, checkCommisionExists, req.UserID).Scan(&hasCommision); err != nil {
+	var hasCommission bool
+	if err := tx.QueryRow(ctx, checkCommisionExists, req.UserID).Scan(&hasCommission); err != nil {
 		return nil, err
 	}
 
-	var Commision struct {
-		AdminCommision             string
-		MasterDistributorCommision string
-		DistributorCommision       string
-		RetailerCommision          string
-		TotalCommision             string
+	var commission struct {
+		Admin             string
+		MasterDistributor string
+		Distributor       string
+		Retailer          string
+		Total             string
 	}
-	if !hasCommision {
-		Commision.TotalCommision = "1.2"
-		Commision.AdminCommision = "0.2917"
-		Commision.MasterDistributorCommision = "0.0417"
-		Commision.DistributorCommision = "0.1667"
-		Commision.RetailerCommision = "0.50"
+
+	if !hasCommission {
+		commission.Total = "1.2"
+		commission.Admin = "0.2917"
+		commission.MasterDistributor = "0.0417"
+		commission.Distributor = "0.1667"
+		commission.Retailer = "0.50"
 	} else {
-		const getCommisions = `
-			SELECT admin_commision::TEXT, master_distributor_commision::TEXT,
-			distributor_commision::TEXT, user_commision::TEXT, commision::TEXT
+		const getCommissions = `
+			SELECT
+				admin_commision::TEXT,
+				master_distributor_commision::TEXT,
+				distributor_commision::TEXT,
+				user_commision::TEXT,
+				commision::TEXT
 			FROM commisions
 			WHERE user_id=$1;
 		`
 
-		if err := tx.QueryRow(ctx, getCommisions, req.UserID).Scan(
-			&Commision.AdminCommision,
-			&Commision.MasterDistributorCommision,
-			&Commision.DistributorCommision,
-			&Commision.RetailerCommision,
-			&Commision.TotalCommision,
+		if err := tx.QueryRow(ctx, getCommissions, req.UserID).Scan(
+			&commission.Admin,
+			&commission.MasterDistributor,
+			&commission.Distributor,
+			&commission.Retailer,
+			&commission.Total,
 		); err != nil {
 			return nil, err
 		}
 	}
 
-	const insertPayoutTransactionQuery = `
-	INSERT INTO payout_service (
-		user_id,
-		mobile_number,
-		account_number,
-		ifsc_code,
-		bank_name,
-		beneficiary_name,
-		amount,
-		transfer_type,
-		transaction_status,
-		remarks,
-		commision
-	)
-	VALUES ($1,$2,$3,$4,$5,$6,$7,UPPER($8),'PENDING',$9,($7::NUMERIC * ($10::NUMERIC / 100::NUMERIC ))::NUMERIC)
-	RETURNING 
-		payout_transaction_id::TEXT,
-		mobile_number AS mobile_no,
-		account_number AS account_no,
-		ifsc_code AS ifsc,
-		bank_name,
-		beneficiary_name AS benificiary_name,
-		amount::TEXT,
-		commision,
-		CASE 
-			WHEN UPPER(transfer_type) = 'IMPS' THEN '5'
-			WHEN UPPER(transfer_type) = 'NEFT' THEN '6'
-		END AS transfer_type;
+	/* -------------------------------- WALLET LOCK -------------------------------- */
+
+	const getUserWalletBalance = `
+		SELECT user_wallet_balance
+		FROM users
+		WHERE user_id=$1
+		FOR UPDATE;
 	`
 
-	var commision string
+	var beforeBalance string
+	if err := tx.QueryRow(ctx, getUserWalletBalance, req.UserID).Scan(&beforeBalance); err != nil {
+		return nil, err
+	}
+
+	/* -------------------------------- INSERT PAYOUT -------------------------------- */
+
+	const insertPayoutTransaction = `
+		INSERT INTO payout_service (
+			user_id,
+			mobile_number,
+			account_number,
+			ifsc_code,
+			bank_name,
+			beneficiary_name,
+			amount,
+			transfer_type,
+			transaction_status,
+			remarks,
+			commision
+		)
+		VALUES (
+			$1,$2,$3,$4,$5,$6,$7,UPPER($8),
+			'PENDING',$9,
+			($7::NUMERIC * ($10::NUMERIC / 100::NUMERIC))
+		)
+		RETURNING
+			payout_transaction_id::TEXT,
+			mobile_number,
+			account_number,
+			ifsc_code,
+			bank_name,
+			beneficiary_name,
+			amount::TEXT,
+			commision::TEXT,
+			CASE
+				WHEN UPPER(transfer_type)='IMPS' THEN '5'
+				WHEN UPPER(transfer_type)='NEFT' THEN '6'
+			END;
+	`
+
 	var res structures.PayoutApiRequest
+	var totalCommission string
+
 	if err := tx.QueryRow(
 		ctx,
-		insertPayoutTransactionQuery,
+		insertPayoutTransaction,
 		req.UserID,
 		req.MobileNumber,
 		req.AccountNumber,
@@ -148,7 +180,7 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 		req.Amount,
 		req.TransferType,
 		req.Remarks,
-		Commision.TotalCommision,
+		commission.Total,
 	).Scan(
 		&res.PartnerRequestID,
 		&res.MobileNumber,
@@ -157,58 +189,104 @@ func (q *Query) InitilizePayoutRequest(req *structures.PayoutInitilizationReques
 		&res.BankName,
 		&res.BeneficiaryName,
 		&res.Amount,
-		&commision,
+		&totalCommission,
 		&res.TransferType,
 	); err != nil {
 		return nil, err
 	}
 
-	log.Println(res)
-	log.Println(commision)
-	log.Println(Commision)
+	/* -------------------------------- TOTAL DEBIT -------------------------------- */
 
-	const updateUserWalletBalance = `
-		UPDATE users SET
-		user_wallet_balance = user_wallet_balance - ($1::NUMERIC + ($2::NUMERIC * $3::NUMERIC))
-		WHERE user_id=$4;
+	const calcTotalDebit = `
+		SELECT ($1::NUMERIC + ($2::NUMERIC * $3::NUMERIC))::NUMERIC;
 	`
 
-	if _, err := tx.Exec(ctx, updateUserWalletBalance, req.Amount, commision, Commision.RetailerCommision, req.UserID); err != nil {
+	var totalDebit string
+	if err := tx.QueryRow(
+		ctx,
+		calcTotalDebit,
+		req.Amount,
+		totalCommission,
+		commission.Retailer,
+	).Scan(&totalDebit); err != nil {
 		return nil, err
 	}
 
-	const updateAdminWalletBalance = `
-		UPDATE admins SET
-		admin_wallet_balance = admin_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
+	/* -------------------------------- UPDATE USER WALLET -------------------------------- */
+
+	const updateUserWallet = `
+		UPDATE users
+		SET user_wallet_balance = user_wallet_balance - $1::NUMERIC
+		WHERE user_id=$2;
+	`
+
+	if _, err := tx.Exec(ctx, updateUserWallet, totalDebit, req.UserID); err != nil {
+		return nil, err
+	}
+
+	var afterBalance string
+	if err := tx.QueryRow(ctx, getUserWalletBalance, req.UserID).Scan(&afterBalance); err != nil {
+		return nil, err
+	}
+
+	/* -------------------------------- PAYOUT REPORT -------------------------------- */
+
+	const insertPayoutReport = `
+		INSERT INTO payout_reports (
+			payout_transaction_id,
+			before_balance,
+			after_balance
+		)
+		VALUES ($1, $2::NUMERIC, $3::NUMERIC);
+	`
+
+	if _, err := tx.Exec(
+		ctx,
+		insertPayoutReport,
+		res.PartnerRequestID,
+		beforeBalance,
+		afterBalance,
+	); err != nil {
+		return nil, err
+	}
+
+	/* -------------------------------- DISTRIBUTION -------------------------------- */
+
+	const updateAdminWallet = `
+		UPDATE admins
+		SET admin_wallet_balance = admin_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
 		WHERE admin_id=$3;
 	`
 
-	if _, err := tx.Exec(ctx, updateAdminWalletBalance, commision, Commision.AdminCommision, UserDetails.adminID); err != nil {
+	if _, err := tx.Exec(ctx, updateAdminWallet, totalCommission, commission.Admin, userDetails.adminID); err != nil {
 		return nil, err
 	}
 
-	const updateMasterDistributorWalletBalance = `
-		UPDATE master_distributors SET
-		master_distributor_wallet_balance = master_distributor_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
+	const updateMasterDistributorWallet = `
+		UPDATE master_distributors
+		SET master_distributor_wallet_balance =
+			master_distributor_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
 		WHERE master_distributor_id=$3;
 	`
 
-	if _, err := tx.Exec(ctx, updateMasterDistributorWalletBalance, commision, Commision.MasterDistributorCommision, UserDetails.masterDistributorID); err != nil {
+	if _, err := tx.Exec(ctx, updateMasterDistributorWallet, totalCommission, commission.MasterDistributor, userDetails.masterDistributorID); err != nil {
 		return nil, err
 	}
 
-	const updateDistributorWalletBalance = `
-		UPDATE distributors SET
-		distributor_wallet_balance = distributor_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
+	const updateDistributorWallet = `
+		UPDATE distributors
+		SET distributor_wallet_balance =
+			distributor_wallet_balance + ($1::NUMERIC * $2::NUMERIC)
 		WHERE distributor_id=$3;
 	`
 
-	if _, err := tx.Exec(ctx, updateDistributorWalletBalance, commision, Commision.DistributorCommision, UserDetails.distributorID); err != nil {
+	if _, err := tx.Exec(ctx, updateDistributorWallet, totalCommission, commission.Distributor, userDetails.distributorID); err != nil {
 		return nil, err
 	}
 
 	return &res, tx.Commit(ctx)
 }
+
 func (q *Query) FinalPayout(req *structures.PayoutFinal) error {
 	query := `
 		UPDATE payout_service SET
@@ -472,4 +550,74 @@ func (q *Query) UpdatePayoutTransaction(req *structures.UpdatePayoutTransaction)
 		return err
 	}
 	return nil
+}
+
+func (q *Query) GetPayoutReports(
+	ctx context.Context,
+	userID string,
+) ([]structures.PayoutReportResponse, error) {
+
+	const query = `
+		SELECT
+			ps.payout_transaction_id::TEXT,
+			ps.user_id::TEXT,
+			ps.mobile_number,
+			ps.account_number,
+			ps.ifsc_code,
+			ps.bank_name,
+			ps.beneficiary_name,
+			ps.amount::TEXT,
+			ps.commision::TEXT,
+			ps.transfer_type,
+			ps.transaction_status,
+			ps.remarks,
+			pr.before_balance::TEXT,
+			pr.after_balance::TEXT,
+			ps.created_at::TEXT
+		FROM payout_service ps
+		INNER JOIN payout_reports pr
+			ON pr.payout_transaction_id = ps.payout_transaction_id
+		WHERE ps.user_id = $1
+		ORDER BY ps.created_at DESC;
+	`
+
+	rows, err := q.Pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var reports []structures.PayoutReportResponse
+
+	for rows.Next() {
+		var r structures.PayoutReportResponse
+
+		if err := rows.Scan(
+			&r.PayoutTransactionID,
+			&r.UserID,
+			&r.MobileNumber,
+			&r.AccountNumber,
+			&r.IFSCCode,
+			&r.BankName,
+			&r.BeneficiaryName,
+			&r.Amount,
+			&r.Commission,
+			&r.TransferType,
+			&r.TransactionStatus,
+			&r.Remarks,
+			&r.BeforeBalance,
+			&r.AfterBalance,
+			&r.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		reports = append(reports, r)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	return reports, nil
 }

@@ -10,4 +10,5 @@ type PayoutInterface interface {
 	GetPayoutTransactions(echo.Context) (*[]structures.GetPayoutLogs, error)
 	VerifyAccountNumber(echo.Context) (*structures.PayoutVerifyAccountResponse, error)
 	RefundPayoutTransaction(string) error
+	GetPayoutReports(echo.Context) ([]structures.PayoutReportResponse, error)
 }

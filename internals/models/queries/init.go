@@ -310,6 +310,15 @@ func (qr *Query) InitializeDatabase() {
 			FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);`,
+		`
+			CREATE TABLE IF NOT EXISTS payout_reports(
+				payout_report_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+				payout_transaction_id UUID NOT NULL,
+				before_balance NUMERIC(20,2) NOT NULL,
+				after_balance NUMERIC(20,2) NOT NULL,
+				created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+			);
+		`,
 	}
 
 	tx, err := qr.Pool.BeginTx(ctx, pgx.TxOptions{})

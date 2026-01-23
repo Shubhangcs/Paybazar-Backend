@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -234,4 +235,11 @@ func (pr *payoutRepo) RefundPayoutTransaction(transactionId string) error {
 	req.TransactionID = transactionId
 
 	return pr.query.PayoutTransactionRefund(&req)
+}
+
+func (pr *payoutRepo) GetPayoutReports(c echo.Context) ([]structures.PayoutReportResponse, error) {
+	var userID = c.Param("user_id")
+	ctx, cancel := context.WithTimeout(c.Request().Context(), time.Second*10)
+	defer cancel()
+	return pr.query.GetPayoutReports(ctx, userID)
 }

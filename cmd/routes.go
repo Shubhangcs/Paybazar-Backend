@@ -195,6 +195,7 @@ func (r *Routes) UserRoutes(rg *echo.Group) {
 	rg.GET("/payout/get/transactions/:user_id", payoutHandler.GetPayoutTransactionRequest)
 	rg.GET("/payout/:user_id/:phone/:account_number/:ifsc", payoutHandler.VerifyPayoutAccountNumber)
 	rg.GET("/payout/refund/:transaction_id", payoutHandler.PayoutTransactionRefund)
+	rg.GET("/payout/report/:user_id" , payoutHandler.GetPayoutReportRequest)
 
 	// Bank Requests
 	var bankRepo = repositories.NewBankRepo(r.Query)

@@ -61,7 +61,15 @@ func (ph *payoutHandler) PayoutTransactionRefund(e echo.Context) error {
 	transactionId := e.Param("transaction_id")
 	err := ph.payoutRepo.RefundPayoutTransaction(transactionId)
 	if err != nil {
-		return e.JSON(http.StatusBadRequest , err)
+		return e.JSON(http.StatusBadRequest, err)
 	}
 	return e.JSON(http.StatusOK, "refund successfull")
+}
+
+func (ph *payoutHandler) GetPayoutReportRequest(e echo.Context) error {
+	res, err := ph.payoutRepo.GetPayoutReports(e)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, structures.FundRequestResponse{Message: err.Error(), Status: "failed"})
+	}
+	return e.JSON(http.StatusOK, structures.FundRequestResponse{Message: "fund request report fetched successfully", Status: "success", Data: map[string]any{"reports": res}})
 }
