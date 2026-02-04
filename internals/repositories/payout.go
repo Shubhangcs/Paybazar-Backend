@@ -55,8 +55,22 @@ func (pr *payoutRepo) PayoutRequest(e echo.Context) (string, error) {
 		return "", echo.NewHTTPError(400, "Invalid amount")
 	}
 
-	if amt < 1000 || amt > 25000 {
-		return "", echo.NewHTTPError(400, "Minimum transaction amount is 1000")
+	specialUsers := map[string]bool{
+		"408513e5-e1f7-4d37-8465-4746fdfa0aa8": true,
+		"e081e9b5-2674-4c76-8fe4-d7e97ed9c76e": true,
+		"b113aaf0-4c51-4451-9adf-e38eca36bf5b": true,
+	}
+
+	maxLimit := 25000.0
+	if specialUsers[req.UserID] {
+		maxLimit = 49999
+	}
+
+	if amt < 1000 || amt > maxLimit {
+		return "", echo.NewHTTPError(
+			400,
+			fmt.Sprintf("Transaction amount must be between 1000 and %.0f", maxLimit),
+		)
 	}
 
 	// Check User Balance
